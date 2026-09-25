@@ -1,0 +1,11 @@
+import { toNextJsHandler } from "better-auth/next-js";
+import { auth } from "@/server/auth/auth";
+
+export const runtime = "nodejs";
+
+export async function GET(req: Request) {
+  return toNextJsHandler(auth()).GET(req);
+}
+export async function POST(req: Request) {
+  return toNextJsHandler(auth()).POST(req);
+}

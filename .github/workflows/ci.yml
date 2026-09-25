@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "claude/**"]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: lifeos_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgres://lifeos_app:lifeos_app@localhost:5432/lifeos_test
+      TEST_DATABASE_ADMIN_URL: postgres://postgres:postgres@localhost:5432/lifeos_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run eval -- --provider mock --strict
+      - name: Build
+        run: npm run build
+        env:
+          DATABASE_URL: postgres://unused
+          BETTER_AUTH_SECRET: build-only-secret-build-only-secret-000
+          FIELD_ENCRYPTION_KEY: rbnThpE3/lB91x/kkJX83mUynjMNKY5jhEU+6wqTbeg=
