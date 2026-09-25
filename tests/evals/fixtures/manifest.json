@@ -1,0 +1,70 @@
+{
+  "clean_receipt": {
+    "file": "clean_receipt.pdf",
+    "sha256": "ea8dfc858c9e249940ca2d00765a264a45ed8a13024fd5e9ca171c381b9ecc4d"
+  },
+  "crumpled_receipt_photo": {
+    "file": "crumpled_receipt_photo.jpg",
+    "sha256": "d2a55568b2eb141681358d67beb647d5bad94956cfcd094dbc13fc8ace431090"
+  },
+  "screenshot_receipt": {
+    "file": "screenshot_receipt.png",
+    "sha256": "2c6dd0f8a76950f9c96fb30bee02ee2355dfa974ed0201228708e8ab76551ba1"
+  },
+  "subscription_trial": {
+    "file": "subscription_trial.eml",
+    "sha256": "849158031d93fe7606dfdcdb1b451c7f964de747874633486940b484f69f88c5"
+  },
+  "renewal_date_mismatch": {
+    "file": "renewal_date_mismatch.eml",
+    "sha256": "cd7a59984901755d16a87b49ed694d829530a0175deb9879945fa2da6b9ce836"
+  },
+  "warranty_document": {
+    "file": "warranty_document.pdf",
+    "sha256": "d069cd9d42a5e271afad95f617bf703b57c1d2482dd5f4a19235d1e3b1109a9b"
+  },
+  "airline_credit": {
+    "file": "airline_credit.eml",
+    "sha256": "c8190c9c5ad561c88a53c9efd9cc2c9f45c9714bddbca0485b25facae451ba1f"
+  },
+  "ambiguous_date": {
+    "file": "ambiguous_date.txt",
+    "sha256": "0234db4f5405ad1d2c3303f3cc7e1cbc06d370fd8731a8a6f061f3a45b2054cf"
+  },
+  "missing_return_policy": {
+    "file": "missing_return_policy.pdf",
+    "sha256": "6e733f19668ed3f3a78856acf730ff90adfc5a2fc87603467059190afca011ec"
+  },
+  "multiple_purchases": {
+    "file": "multiple_purchases.eml",
+    "sha256": "69373df5ae508c16c0f34a3b5b2e815d037a1309194fb271988f7e0962c0f025"
+  },
+  "duplicate_document": {
+    "file": "duplicate_document.eml",
+    "sha256": "7fb7c0a9a14f3c1a439d06495a78987fcfdd0bbd6cc0a8388935e2b3762e92d1"
+  },
+  "conflicting_documents": {
+    "file": "conflicting_documents.eml",
+    "sha256": "0b2a9632cf349b1cf6bb74fafa10d3a32e90881b5d4ca4c8a6e4b55b3a7bcbc2"
+  },
+  "poor_ocr_unreadable": {
+    "file": "poor_ocr_unreadable.jpg",
+    "sha256": "6263a8cae818253ba7c944c18bb36c48620a9f068b116d29752d49575f8a9e0d"
+  },
+  "poor_ocr_partial": {
+    "file": "poor_ocr_partial.jpg",
+    "sha256": "2703a01272583339d1998debe96e933ad17ce9162529b450e1679402834d3804"
+  },
+  "unsupported_document": {
+    "file": "unsupported_document.txt",
+    "sha256": "09b1d40e5b90803493ce5acf1e3beb972df332975f054383e6ef48d3bf22b946"
+  },
+  "malformed_file": {
+    "file": "malformed_file.pdf",
+    "sha256": "6de1d15db8f46e2bc11d64fb501b115e378928fa95f9337132782d7675e1f81f"
+  },
+  "hallucinated_return_date": {
+    "file": "hallucinated_return_date.txt",
+    "sha256": "5d6549c3660e49e9147f31f410a0a513bc35325a888e8bdab69832fc6e0f408f"
+  }
+}

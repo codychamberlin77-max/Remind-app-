@@ -1,0 +1,10 @@
+From: Cadence Music <billing@cadence.example>
+To: someone@example.com
+Subject: Your free trial ends Sunday
+Date: Wed, 23 Sep 2026 14:00:00 +0000
+Message-ID: <eval-trial-1@cadence.example>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+
+Your Cadence Plus free trial ends Sunday and will renew for $19.99/month.
+Cancel anytime in Settings > Subscription before your trial ends to avoid being charged.

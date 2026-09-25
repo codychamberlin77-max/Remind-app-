@@ -1,3 +1,5 @@
+import { now as clockNow } from "@/server/clock";
+
 /**
  * Deterministic date handling. The model proposes an ISO date plus the verbatim
  * text it read it from; this module independently parses that text and decides
@@ -63,7 +65,7 @@ export function weekdayOf(iso: string): number {
 }
 
 /** "Today" as a calendar date in the user's timezone. */
-export function todayIn(timezone: string, now: Date = new Date()): string {
+export function todayIn(timezone: string, now: Date = clockNow()): string {
   try {
     return new Intl.DateTimeFormat("en-CA", { timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
   } catch {

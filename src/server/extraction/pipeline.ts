@@ -209,7 +209,7 @@ export async function processDocument(userId: string, documentId: string, opts: 
     await setStage(userId, documentId, "finding_actions");
     const needsReview = items.some((i) => i.needsReview);
     const processingMs = Date.now() - started;
-    const status: DocumentStatus = needsReview ? "needs_review" : "processed";
+    let status: DocumentStatus = needsReview ? "needs_review" : "processed";
     // Credit / confirmation codes live only in their encrypted column.
     const scrub = (s: string) => secrets.reduce((acc, sec) => acc.split(sec).join(`••••${sec.slice(-3)}`), s);
     if (secrets.length) extractionRaw = JSON.parse(scrub(JSON.stringify(extractionRaw)));
@@ -234,7 +234,8 @@ export async function processDocument(userId: string, documentId: string, opts: 
           latencyMs: processingMs,
         })
         .returning({ id: schema.documentExtractions.id });
-      const ids = await persistDerivedItems(tx, { userId, documentId, extractionId: extraction!.id, items, today });
+      const { ids, conflicts } = await persistDerivedItems(tx, { userId, documentId, extractionId: extraction!.id, items, today });
+      if (conflicts) status = "needs_review";
       await tx
         .update(schema.documents)
         .set({ status, stage: "done", failureReason: null, processedAt: new Date(), processingMs, ...(secrets.length ? { textContent: scrub(safeText) } : {}) })

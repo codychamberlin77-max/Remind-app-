@@ -184,6 +184,10 @@ export function verifyDate(
   let conf = Math.min(f.confidence, ctx.readCap);
   let explanation: string | null = null;
 
+  // A purchase/sent date can't be in the future: if the other reading is, the ambiguity resolves itself.
+  if (check.status === "ambiguous" && opts.kind === "past" && daysBetween(ctx.today, check.alternative) > 1) {
+    return finalize(iso, f.evidence, round(Math.min(f.confidence, ctx.readCap, 0.85)));
+  }
   if (check.status === "ambiguous") {
     ctx.warnings.push(`ambiguous_date:${label}`);
     return {

@@ -72,11 +72,12 @@ const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
 export async function persistDerivedItems(
   tx: Tx,
   args: { userId: string; documentId: string; extractionId: string | null; items: DerivedItem[]; today: string },
-): Promise<string[]> {
+): Promise<{ ids: string[]; conflicts: number }> {
   const { userId, documentId, extractionId, today } = args;
   await tx.delete(schema.items).where(and(eq(schema.items.userId, userId), eq(schema.items.documentId, documentId)));
   const cats = await categoryMap(tx);
   const ids: string[] = [];
+  let conflicts = 0;
 
   for (const item of args.items) {
     const dup = item.kind === "document" ? null : await findDuplicate(tx, userId, documentId, item);
@@ -103,6 +104,7 @@ export async function persistDerivedItems(
     ids.push(itemId);
 
     if (dup?.conflict) {
+      conflicts++;
       await tx
         .update(schema.items)
         .set({ conflictNote: dup.conflict, needsReview: true })
@@ -168,7 +170,7 @@ export async function persistDerivedItems(
       }
     }
   }
-  return ids;
+  return { ids, conflicts };
 }
 
 export async function writeTypedProjections(tx: Tx, userId: string, itemId: string, item: DerivedItem) {

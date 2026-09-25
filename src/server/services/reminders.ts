@@ -1,5 +1,6 @@
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { audit } from "@/server/audit/log";
+import { now as clockNow } from "@/server/clock";
 import { db, schema, withUser, type Tx } from "@/server/db/client";
 import type { ReminderChannel, ReminderPreset } from "@/server/domain/types";
 import { addDays, daysBetween, formatDate, isValidIso, todayIn } from "@/server/extraction/dates";
@@ -79,7 +80,7 @@ export async function createReminder(
   opts: { now?: Date } = {},
 ) {
   const tz = await userTimezone(userId);
-  const now = opts.now ?? new Date();
+  const now = opts.now ?? clockNow();
   const today = todayIn(tz, now);
   return withUser(userId, async (tx) => {
     const [action] = await tx
