@@ -21,8 +21,8 @@ jobs:
       TEST_DATABASE_URL: postgres://lifeos_app:lifeos_app@localhost:5432/lifeos_test
       TEST_DATABASE_ADMIN_URL: postgres://postgres:postgres@localhost:5432/lifeos_test
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
