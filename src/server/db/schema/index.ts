@@ -270,6 +270,7 @@ export const itemFacts = pgTable(
     valueDate: date("value_date", { mode: "string" }),
     valueCents: bigint("value_cents", { mode: "number" }),
     valueNumber: real("value_number"),
+    currency: text("currency"),
     certainty: text("certainty").$type<Certainty>().notNull(),
     basis: text("basis").$type<Basis>().notNull(),
     /** Verbatim quote from the source document, when there is one. */

@@ -15,6 +15,13 @@
       "when": 1790320695866,
       "tag": "0001_rls",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790321464141,
+      "tag": "0002_fact_currency",
+      "breakpoints": true
     }
   ]
 }

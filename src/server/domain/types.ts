@@ -15,6 +15,7 @@ export const BASES = [
   "merchant_policy",
   "manufacturer_default",
   "inferred", // model inference without verbatim evidence — never "confirmed"
+  "unclear_on_document", // on the document but hard to read / ambiguous
   "user_entered",
   "none",
 ] as const;
@@ -69,7 +70,7 @@ export type ActionStatus = "open" | "snoozed" | "done" | "dismissed";
 
 export type Consequence = "lose_money" | "charged" | "lose_coverage" | "late_fee" | "inconvenience";
 
-export type ProtectionKind = "return_window" | "warranty" | "travel_credit" | "refund" | "trial";
+export type ProtectionKind = "return_window" | "warranty" | "travel_credit" | "refund";
 export type ProtectionStatus = "active" | "expired" | "used" | "dismissed";
 
 export type OutcomeKind =

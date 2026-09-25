@@ -1,0 +1,1 @@
+ALTER TABLE "item_facts" ADD COLUMN "currency" text;
