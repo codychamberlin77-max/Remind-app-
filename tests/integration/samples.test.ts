@@ -22,7 +22,7 @@ describe("first-run samples (end to end)", () => {
 
     const disc = await getDiscoveries(u.id, [res.documentId]);
     const labels = disc.found.map((d) => d.label);
-    expect(labels).toEqual(["Purchase", "Return window", "Warranty", "Money protected"]);
+    expect(labels).toEqual(["Purchase · Best Buy", "Return window", "Warranty", "Money protected"]);
     const ret = disc.found.find((d) => d.label === "Return window")!;
     expect(ret.certainty).toBe("estimated");
     expect(ret.value).toBe("Estimated: 12 days remaining");

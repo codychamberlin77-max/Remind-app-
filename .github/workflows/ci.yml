@@ -36,3 +36,14 @@ jobs:
           DATABASE_URL: postgres://unused
           BETTER_AUTH_SECRET: build-only-secret-build-only-secret-000
           FIELD_ENCRYPTION_KEY: rbnThpE3/lB91x/kkJX83mUynjMNKY5jhEU+6wqTbeg=
+      - name: End-to-end tests
+        run: |
+          npx playwright install --with-deps chromium
+          npm run test:e2e
+        env:
+          DATABASE_URL: postgres://lifeos_app:lifeos_app@localhost:5432/lifeos_test
+          BETTER_AUTH_SECRET: e2e-secret-e2e-secret-e2e-secret-e2e-secret
+          FIELD_ENCRYPTION_KEY: rbnThpE3/lB91x/kkJX83mUynjMNKY5jhEU+6wqTbeg=
+          STORAGE_DRIVER: local
+          AI_PROVIDER: mock
+          LIFEOS_MOCK_FIXTURES: "1"

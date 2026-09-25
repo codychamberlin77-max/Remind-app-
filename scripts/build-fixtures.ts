@@ -86,6 +86,9 @@ async function main() {
     manifest[c.id] = { file, sha256: createHash("sha256").update(bytes).digest("hex") };
   }
   await writeFile(path.join(OUT, "manifest.json"), JSON.stringify(manifest, null, 2) + "\n");
+  // Recordings keyed by file hash, so the mock provider in local dev can "read" these files when uploaded.
+  const recordings = CASES.filter((c) => c.recording).map((c) => ({ id: `fixture:${c.id}`, match: { sha256: manifest[c.id]!.sha256 }, ...c.recording }));
+  await writeFile(path.join(OUT, "recordings.json"), JSON.stringify(recordings) + "\n");
   console.log(`wrote ${Object.keys(manifest).length} fixtures to ${OUT}`);
 }
 

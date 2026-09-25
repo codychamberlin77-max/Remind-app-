@@ -1,6 +1,6 @@
 # LIFEOS — MVP Architecture Proposal
 
-Status: **proposal, awaiting approval**. Nothing here is implemented yet.
+Status: **approved and implemented (MVP)**. See "Implementation notes" at the end for decisions that changed during the build.
 
 The MVP proves one loop:
 
@@ -517,3 +517,17 @@ That's about 2.5–3 weeks of focused build. The first end-to-end "upload → ac
 - **Honesty as a feature.** When something is uncertain, we say so in a way that builds trust: *"This receipt doesn't list a return policy. Best Buy usually allows 15 days, so we've estimated Sept 25. [Looks right] [Edit]"*. Users trust an app more when they catch it being careful.
 - **One-tap remind.** Every action has a prefilled smart default ("Remind me 3 days before") so the first reminder takes one tap. We only ask for email notification permission *after* that first reminder, when the reason is obvious.
 - **Then invite a second upload.** "Got more? Drop in a subscription email." The dashboard fills in, and the Needs Attention section becomes the reason to come back.
+
+---
+
+## Implementation notes (decisions that changed during the build)
+
+- **Facts are canonical.** The `item_facts` table stores every displayed fact with its certainty, basis, evidence quote, and explanation. Actions and protections are always planned from facts by one function (`derivation/plan.ts`), both at extraction time and after every user edit. The typed tables (`purchases`, `subscriptions`, `warranties`, `travel_credits`) are query projections that are kept in sync.
+- **Money Protected / Money Saved.** `protections` holds active opportunities (return window, warranty, travel credit, refund). Money Protected counts each item once, at its largest active, dated protection. `financial_outcomes` is written only when the user confirms an outcome, and Money Saved is summed only from those rows.
+- **Photos go through a transcription step.** The model first transcribes the image, then extraction runs on the text. This lets evidence be grounded for photos too. Legibility caps confidence, so a hard-to-read photo never produces a "confirmed" fact.
+- **Dates and money must be quoted verbatim.** A date survives only if its quote appears on the document and our own parser reads that quote as the same date. Otherwise it is dropped (shown as Unknown), never shown as estimated. Ambiguous numeric dates are shown as Estimated, with both possible readings.
+- **Progress uses polling, not SSE.** The upload screen polls `documents.stage`. That's simpler behind Railway's proxy and resilient to reconnects.
+- **Worker scans across users** go through `SECURITY DEFINER` SQL functions that return only ids. Each row is then processed inside its owner's RLS context.
+- **Credit and confirmation codes** are encrypted in `travel_credits.credit_reference_enc` and scrubbed from stored document text and extraction JSON.
+- **The forwarding address (Phase 1.5)** will call `ingest()` with `source: "email_forward"`. `inbound_addresses`, `email_connections`, and `inbound_messages` already exist.
+- **HEIC is rejected** with a clear message. The prebuilt `sharp` can't decode it, and mobile browsers usually convert to JPEG on upload.

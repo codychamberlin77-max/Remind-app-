@@ -439,6 +439,8 @@ export type Discovery = {
   certainty: Certainty | null;
   factKey: string | null;
   actionId: string | null;
+  documentId?: string | null;
+  raw?: { valueDate: string | null; valueCents: number | null; valueText: string | null } | null;
 };
 
 /**
@@ -466,7 +468,11 @@ export async function getDiscoveries(userId: string, documentIds: string[], opts
       const f = (k: string) => facts.find((x) => x.key === k);
       const actionFor = (t: string) => acts.find((a) => a.type === t)?.id ?? null;
       const money = (cents: number | null | undefined, cur?: string | null) => formatMoney(cents ?? null, cur ?? it.currency ?? "USD");
-      const push = (d: Omit<Discovery, "itemId">) => (d.certainty === "unknown" ? unknowns : found).push({ itemId: it.id, ...d });
+      const push = (d: Omit<Discovery, "itemId">) => {
+        const fx = d.factKey ? f(d.factKey) : undefined;
+        const raw = fx ? { valueDate: fx.valueDate, valueCents: fx.valueCents, valueText: fx.valueText } : null;
+        (d.certainty === "unknown" ? unknowns : found).push({ itemId: it.id, documentId: it.documentId, raw, ...d });
+      };
       const dateLine = (fact: typeof facts[number]) => {
         if (!fact.valueDate) return "";
         const d = daysBetween(today, fact.valueDate);
@@ -484,7 +490,15 @@ export async function getDiscoveries(userId: string, documentIds: string[], opts
           const total = f("total");
           const merchant = f("merchant");
           const pd = f("purchase_date");
-          push({ kind: "purchase", label: "Purchase", value: `${money(total?.valueCents, total?.currency)} ${it.title}`.trim(), detail: [merchant?.valueText, pd?.valueDate ? `Purchased ${formatDate(pd.valueDate)}` : null].filter(Boolean).join(" · ") || null, certainty: total?.certainty ?? "unknown", factKey: "total", actionId: null });
+          push({
+            kind: "purchase",
+            label: merchant?.valueText ? `Purchase · ${merchant.valueText}` : "Purchase",
+            value: it.title,
+            detail: [total?.valueCents != null ? `${money(total.valueCents, total.currency)} total` : "Amount unknown", pd?.valueDate ? `Purchased ${formatDate(pd.valueDate)}` : null].filter(Boolean).join(" · "),
+            certainty: total?.certainty ?? "unknown",
+            factKey: "total",
+            actionId: null,
+          });
           const ret = f("return_deadline");
           if (ret) push({ kind: ret.certainty === "unknown" ? "unknown" : "deadline", label: "Return window", value: ret.certainty === "unknown" ? "Unknown" : dateLine(ret), detail: ret.explanation, certainty: ret.certainty, factKey: "return_deadline", actionId: actionFor("return") });
           const war = f("warranty");

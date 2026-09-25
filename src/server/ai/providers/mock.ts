@@ -33,6 +33,16 @@ export function clearMockRecordings() {
 async function loadBuiltins() {
   const { SAMPLE_RECORDINGS } = await import("@/server/samples/recordings");
   registerMockRecordings(SAMPLE_RECORDINGS);
+  // Outside production, also replay the evaluation fixtures so they can be uploaded through the UI.
+  if (process.env.NODE_ENV !== "production" || process.env.LIFEOS_MOCK_FIXTURES === "1") {
+    try {
+      const { readFile } = await import("node:fs/promises");
+      const file = process.env.LIFEOS_MOCK_RECORDINGS ?? `${process.cwd()}/tests/evals/fixtures/recordings.json`;
+      registerMockRecordings(JSON.parse(await readFile(file, "utf8")) as MockRecording[]);
+    } catch {
+      /* fixtures not present — fine */
+    }
+  }
 }
 
 function textOf(req: GenerateRequest<unknown>): string {
