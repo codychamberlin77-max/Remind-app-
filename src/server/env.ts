@@ -4,9 +4,35 @@ import { z } from "zod";
  * Server environment. Parsed lazily so `next build` and unit tests that never
  * touch a given subsystem don't need every variable set.
  */
+/**
+ * Accept the common ways APP_URL gets mistyped in a hosting dashboard (quotes,
+ * spaces, missing scheme, trailing slash, an unresolved template). If it still
+ * isn't usable, fall back to the platform-provided public domain.
+ */
+function normalizeAppUrl(raw: unknown): string {
+  const clean = (v: string) => {
+    let u = v.trim().replace(/^['"]|['"]$/g, "").trim().replace(/\/+$/, "");
+    if (u && !/^https?:\/\//i.test(u)) u = `https://${u}`;
+    return u;
+  };
+  const candidates = [
+    typeof raw === "string" && !raw.includes("${{") ? clean(raw) : "",
+    process.env.RAILWAY_PUBLIC_DOMAIN ? clean(process.env.RAILWAY_PUBLIC_DOMAIN) : "",
+  ];
+  for (const c of candidates) {
+    try {
+      const u = new URL(c);
+      if (u.hostname && u.hostname.includes(".") || u.hostname === "localhost") return u.origin;
+    } catch {
+      /* try next */
+    }
+  }
+  return typeof raw === "string" && raw ? raw : "http://localhost:3000";
+}
+
 const schema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-  APP_URL: z.string().url().default("http://localhost:3000"),
+  APP_URL: z.preprocess(normalizeAppUrl, z.string().url()),
 
   // Runtime role: NOT a superuser, NOT the table owner, no BYPASSRLS.
   DATABASE_URL: z.string().min(1),
