@@ -1,4 +1,7 @@
+import { createReadStream, createWriteStream } from "node:fs";
 import { mkdir, readFile, rm, writeFile, readdir } from "node:fs/promises";
+import { Readable } from "node:stream";
+import { pipeline } from "node:stream/promises";
 import path from "node:path";
 import {
   DeleteObjectCommand,
@@ -8,6 +11,7 @@ import {
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
+import { Upload } from "@aws-sdk/lib-storage";
 import { v7 as uuidv7 } from "uuid";
 import { env } from "@/server/env";
 
@@ -21,6 +25,9 @@ export interface ObjectStore {
   delete(key: string): Promise<void>;
   deletePrefix(prefix: string): Promise<number>;
   exists(key: string): Promise<boolean>;
+  /** Stream large uploads (mail archives) without holding them in memory. */
+  putStream(key: string, body: Readable, contentType: string): Promise<void>;
+  getStream(key: string): Promise<Readable>;
 }
 
 /** Keys never contain filenames or anything user-supplied. */
@@ -61,6 +68,14 @@ class LocalObjectStore implements ObjectStore {
       () => true,
       () => false,
     );
+  }
+  async putStream(key: string, body: Readable) {
+    const p = this.resolve(key);
+    await mkdir(path.dirname(p), { recursive: true });
+    await pipeline(body, createWriteStream(p, { mode: 0o600 }));
+  }
+  async getStream(key: string) {
+    return createReadStream(this.resolve(key));
   }
 }
 
@@ -113,6 +128,13 @@ class R2ObjectStore implements ObjectStore {
     } catch {
       return false;
     }
+  }
+  async putStream(key: string, body: Readable, contentType: string) {
+    await new Upload({ client: this.client, params: { Bucket: this.bucket, Key: key, Body: body, ContentType: contentType } }).done();
+  }
+  async getStream(key: string) {
+    const res = await this.client.send(new GetObjectCommand({ Bucket: this.bucket, Key: key }));
+    return res.Body as Readable;
   }
 }
 

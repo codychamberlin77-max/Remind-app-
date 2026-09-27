@@ -233,6 +233,14 @@ export function UploadFlow({ welcome }: { welcome: boolean }) {
         ))}
       </div>
 
+      <Link href="/email" className="mt-6 flex items-center justify-between gap-3 p-4 rounded-2xl bg-surface shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-pop)] transition-shadow">
+        <span>
+          <span className="block text-[14px] font-medium">Most of this is in your email</span>
+          <span className="block text-[12.5px] text-subtle">Forward receipts and trials automatically, or import past email from Google.</span>
+        </span>
+        <ArrowRight className="size-4 text-muted shrink-0" />
+      </Link>
+
       <div className="mt-12">
         <p className="text-[13px] font-semibold text-ink-2 px-1">No file handy? Try a sample.</p>
         <p className="text-[13px] text-subtle px-1 mt-0.5">Samples are processed on our servers only. Nothing is sent to an AI provider.</p>

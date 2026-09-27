@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { CancelReminder, DangerZone, NotificationForm, ProfileForm, SignOut } from "@/components/app/settings-forms";
 import { Card, SectionTitle } from "@/components/ui/card";
 import { requireUser } from "@/server/auth/session";
@@ -27,6 +28,14 @@ export default async function Settings() {
       <section>
         <SectionTitle>Profile</SectionTitle>
         <Card className="p-5"><ProfileForm name={user.name} timezone={user.timezone} timezones={timezones} /></Card>
+      </section>
+
+      <section>
+        <SectionTitle>Email</SectionTitle>
+        <Card className="p-5 flex items-center justify-between gap-4">
+          <p className="text-[14px] text-muted">Forward receipts and subscription emails, or import past email from Google.</p>
+          <Link href="/email" className="text-[14px] font-medium underline shrink-0">Set up</Link>
+        </Card>
       </section>
 
       <section>

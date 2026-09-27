@@ -45,3 +45,4 @@ The eval reports extraction accuracy, the **false deadline rate** (the target is
 4. Create a private R2 bucket (no public access) and set `STORAGE_DRIVER=r2` and the `R2_*` variables.
 5. Set `BETTER_AUTH_SECRET`, `FIELD_ENCRYPTION_KEY` (`openssl rand -base64 32`), `APP_URL`, and optionally `GOOGLE_CLIENT_ID/SECRET`, `EMAIL_DRIVER=resend` + `RESEND_API_KEY` + `EMAIL_FROM`.
 6. Set `AI_PROVIDER=anthropic` + `ANTHROPIC_API_KEY` when you're ready for real documents.
+7. Optional, email forwarding and past-email import: follow [docs/EMAIL_FORWARDING.md](docs/EMAIL_FORWARDING.md).

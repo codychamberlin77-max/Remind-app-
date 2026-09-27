@@ -4,6 +4,7 @@
  *   - delivers due reminders (every minute)
  *   - refreshes priorities / expiries (daily)
  *   - purges deleted users' objects
+ *   - scans Google Takeout mail imports
  */
 import { PgBoss } from "pg-boss";
 import { closeDb } from "@/server/db/client";
@@ -27,6 +28,10 @@ async function main() {
   });
   await boss.work(QUEUES.deleteObject, async (jobs) => {
     for (const j of jobs) await handlers[QUEUES.deleteObject](j.data as never);
+  });
+
+  await boss.work(QUEUES.importMailbox, async (jobs) => {
+    for (const j of jobs) await handlers[QUEUES.importMailbox](j.data as never);
   });
 
   await boss.schedule(QUEUES.dispatchReminders, "* * * * *");

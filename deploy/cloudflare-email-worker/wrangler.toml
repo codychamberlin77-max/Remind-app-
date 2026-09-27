@@ -1,0 +1,9 @@
+name = "lifeos-inbound-email"
+main = "worker.js"
+compatibility_date = "2026-09-01"
+
+[vars]
+# Replace with your web service URL.
+LIFEOS_INBOUND_URL = "https://remind-app-production.up.railway.app/api/inbound/email"
+
+# Set the secret with: npx wrangler secret put INBOUND_EMAIL_SECRET

@@ -1,11 +1,12 @@
 import { PgBoss } from "pg-boss";
 import { env } from "@/server/env";
-import { QUEUES, type DeleteObjectJob, type ProcessDocumentJob, type PurgeUserObjectsJob } from "./queues";
+import { QUEUES, type DeleteObjectJob, type ImportMailboxJob, type ProcessDocumentJob, type PurgeUserObjectsJob } from "./queues";
 
 type Payloads = {
   [QUEUES.processDocument]: ProcessDocumentJob;
   [QUEUES.purgeUserObjects]: PurgeUserObjectsJob;
   [QUEUES.deleteObject]: DeleteObjectJob;
+  [QUEUES.importMailbox]: ImportMailboxJob;
   [QUEUES.dispatchReminders]: Record<string, never>;
   [QUEUES.reprioritize]: Record<string, never>;
 };
@@ -44,5 +45,6 @@ export async function enqueue<Q extends QueueName>(name: Q, data: Payloads[Q]): 
     retryDelay: 5,
     retryBackoff: true,
     ...(name === QUEUES.processDocument ? { singletonKey: (data as ProcessDocumentJob).documentId } : {}),
+    ...(name === QUEUES.importMailbox ? { singletonKey: (data as ImportMailboxJob).importId, retryLimit: 1, expireInSeconds: 3 * 3600 } : {}),
   });
 }

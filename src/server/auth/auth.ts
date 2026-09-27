@@ -56,7 +56,7 @@ function build() {
       max: 30,
       customRules: {
         "/sign-in/email": { window: 60, max: 8 },
-        "/sign-up/email": { window: 60, max: 5 },
+        "/sign-up/email": { window: 60, max: e.SIGNUP_RATE_LIMIT_PER_MINUTE },
       },
     },
     plugins: [nextCookies()],

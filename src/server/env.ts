@@ -63,6 +63,16 @@ const schema = z.object({
   RESEND_API_KEY: z.string().optional(),
   EMAIL_FROM: z.string().default("LIFEOS <reminders@localhost>"),
 
+  // Email forwarding (Phase 1.5). Addresses look like <token>@INBOUND_EMAIL_DOMAIN.
+  INBOUND_EMAIL_DOMAIN: z.string().optional(),
+  // Shared secret the inbound mail relay (Cloudflare Email Worker) signs each delivery with.
+  INBOUND_EMAIL_SECRET: z.string().optional(),
+  // Past-email import (Google Takeout .mbox / .zip).
+  MAX_IMPORT_BYTES: z.coerce.number().int().positive().default(1024 * 1024 * 1024),
+  // Sign-ups per IP per minute (raised only for the e2e suite, which signs up many users).
+  SIGNUP_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().positive().default(5),
+  MAX_IMPORT_DOCUMENTS: z.coerce.number().int().positive().default(300),
+
   // "inline" runs jobs in-process (tests, simple local dev); "queue" uses pg-boss + worker.
   JOBS_MODE: z.enum(["queue", "inline"]).default("queue"),
   MAX_UPLOAD_BYTES: z.coerce.number().int().positive().default(20 * 1024 * 1024),
@@ -83,6 +93,9 @@ export function env(): Env {
       for (const k of ["R2_ACCOUNT_ID", "R2_ACCESS_KEY_ID", "R2_SECRET_ACCESS_KEY", "R2_BUCKET"] as const) {
         if (!parsed.data[k]) throw new Error(`STORAGE_DRIVER=r2 requires ${k}`);
       }
+    }
+    if (parsed.data.INBOUND_EMAIL_DOMAIN && (parsed.data.INBOUND_EMAIL_SECRET ?? "").length < 24) {
+      throw new Error("INBOUND_EMAIL_DOMAIN requires INBOUND_EMAIL_SECRET (at least 24 characters)");
     }
     if (parsed.data.AI_PROVIDER === "anthropic" && !parsed.data.ANTHROPIC_API_KEY) {
       throw new Error("AI_PROVIDER=anthropic requires ANTHROPIC_API_KEY");

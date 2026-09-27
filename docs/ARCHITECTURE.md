@@ -529,5 +529,5 @@ That's about 2.5–3 weeks of focused build. The first end-to-end "upload → ac
 - **Progress uses polling, not SSE.** The upload screen polls `documents.stage`. That's simpler behind Railway's proxy and resilient to reconnects.
 - **Worker scans across users** go through `SECURITY DEFINER` SQL functions that return only ids. Each row is then processed inside its owner's RLS context.
 - **Credit and confirmation codes** are encrypted in `travel_credits.credit_reference_enc` and scrubbed from stored document text and extraction JSON.
-- **The forwarding address (Phase 1.5)** will call `ingest()` with `source: "email_forward"`. `inbound_addresses`, `email_connections`, and `inbound_messages` already exist.
+- **The forwarding address (Phase 1.5)** is built: Cloudflare Email Routing → Email Worker → signed webhook (`/api/inbound/email`) → `ingest()` with `source: "email_forward"`. Past email comes in through a one-time Google Takeout import (`source: "email_import"`). See `docs/EMAIL_FORWARDING.md`.
 - **HEIC is rejected** with a clear message. The prebuilt `sharp` can't decode it, and mobile browsers usually convert to JPEG on upload.

@@ -24,6 +24,8 @@ export default defineConfig({
       FIELD_ENCRYPTION_KEY: "rbnThpE3/lB91x/kkJX83mUynjMNKY5jhEU+6wqTbeg=",
       EMAIL_DRIVER: "log",
       JOBS_MODE: "inline",
+      INBOUND_EMAIL_DOMAIN: "in.lifeos.test",
+      INBOUND_EMAIL_SECRET: "test-inbound-secret-0123456789abcdef",
     },
   },
 });

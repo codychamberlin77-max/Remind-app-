@@ -539,6 +539,11 @@ export const inboundAddresses = pgTable(
     /** Random token forming the local part of the forwarding address. */
     token: text("token").notNull().unique(),
     disabledAt: timestamp("disabled_at", { withTimezone: true }),
+    /** Latest Gmail "confirm forwarding" code sent to this address, shown to the user. */
+    verificationCode: text("verification_code"),
+    verificationLink: text("verification_link"),
+    verificationReceivedAt: timestamp("verification_received_at", { withTimezone: true }),
+    lastReceivedAt: timestamp("last_received_at", { withTimezone: true }),
     createdAt: createdAt(),
   },
   (t) => [index("inbound_addresses_user_idx").on(t.userId)],
@@ -571,11 +576,39 @@ export const inboundMessages = pgTable(
     providerMessageId: text("provider_message_id").notNull(),
     relevanceScore: real("relevance_score").notNull(),
     relevanceReason: text("relevance_reason"),
-    status: text("status").$type<"skipped" | "ingested">().notNull(),
+    /** Sender's domain only (e.g. "bestbuy.com"), for the activity list. Never the address or content. */
+    fromDomain: text("from_domain"),
+    source: text("source").$type<"email_forward" | "gmail" | "outlook">().notNull().default("email_forward"),
+    status: text("status").$type<"skipped" | "ingested" | "verification" | "rejected">().notNull(),
     documentId: uuid("document_id").references(() => documents.id, { onDelete: "set null" }),
     createdAt: createdAt(),
   },
   (t) => [uniqueIndex("inbound_messages_user_msg_uidx").on(t.userId, t.providerMessageId)],
+);
+
+/**
+ * A one-off import of past email (Google Takeout .mbox or .zip). The uploaded
+ * archive is deleted as soon as it has been scanned; only counts are kept.
+ */
+export const emailImports = pgTable(
+  "email_imports",
+  {
+    id: id(),
+    userId: userRef(),
+    storageKey: text("storage_key"),
+    filename: text("filename").notNull(),
+    sizeBytes: bigint("size_bytes", { mode: "number" }).notNull(),
+    status: text("status").$type<"queued" | "scanning" | "done" | "failed">().notNull().default("queued"),
+    scanned: integer("scanned").notNull().default(0),
+    relevant: integer("relevant").notNull().default(0),
+    imported: integer("imported").notNull().default(0),
+    duplicates: integer("duplicates").notNull().default(0),
+    limitReached: boolean("limit_reached").notNull().default(false),
+    failureReason: text("failure_reason"),
+    createdAt: createdAt(),
+    finishedAt: timestamp("finished_at", { withTimezone: true }),
+  },
+  (t) => [index("email_imports_user_idx").on(t.userId, t.createdAt)],
 );
 
 /** Tables protected by RLS (kept in sync with the RLS migration; asserted by tests). */
@@ -599,4 +632,5 @@ export const RLS_TABLES = [
   "inbound_addresses",
   "email_connections",
   "inbound_messages",
+  "email_imports",
 ] as const;

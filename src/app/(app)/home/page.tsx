@@ -124,7 +124,7 @@ export default async function Home() {
       <Card className="p-5 flex items-center justify-between gap-4">
         <div>
           <p className="font-medium text-[15px]">Got more?</p>
-          <p className="text-[13.5px] text-muted">Receipts, subscription emails, credits, warranties.</p>
+          <p className="text-[13.5px] text-muted">Receipts, subscription emails, credits, warranties. Or <Link href="/email" className="underline">forward your email</Link>.</p>
         </div>
         <Button asChild variant="secondary"><Link href="/add">Add <ArrowRight className="size-3.5" /></Link></Button>
       </Card>

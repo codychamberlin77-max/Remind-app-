@@ -134,3 +134,11 @@ export async function deleteAccountAction(confirm: string) {
   if (res.ok) redirect("/?deleted=1");
   return res;
 }
+
+export async function regenerateForwardingAddressAction() {
+  return run(async (userId) => {
+    const { regenerateAddress } = await import("@/server/services/inbound");
+    await regenerateAddress(userId);
+    return "New address created. Update your forwarding rule to use it.";
+  }, ["/email"]);
+}

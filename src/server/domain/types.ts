@@ -21,7 +21,7 @@ export const BASES = [
 ] as const;
 export type Basis = (typeof BASES)[number];
 
-export const DOCUMENT_SOURCES = ["upload", "sample", "email_forward", "gmail", "outlook"] as const;
+export const DOCUMENT_SOURCES = ["upload", "sample", "email_forward", "email_import", "gmail", "outlook"] as const;
 export type DocumentSource = (typeof DOCUMENT_SOURCES)[number];
 
 export type DocumentStatus = "queued" | "processing" | "processed" | "needs_review" | "failed" | "unsupported";
