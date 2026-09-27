@@ -88,7 +88,7 @@ export function UploadFlow({ welcome }: { welcome: boolean }) {
       return results.map((r) =>
         r.status === "rejected"
           ? { id: null, filename: r.filename, stage: "failed", status: "failed", error: r.message }
-          : { id: r.documentId!, filename: r.filename, stage: r.status === "duplicate" ? "done" : "received", status: r.status === "duplicate" ? "processed" : "queued" },
+          : { id: r.documentId!, filename: r.filename, stage: "received", status: "queued" },
       );
     });
   }
@@ -101,7 +101,7 @@ export function UploadFlow({ welcome }: { welcome: boolean }) {
       const { result } = (await res.json()) as { result: { status: string; documentId?: string; message?: string } };
       return [
         result.documentId
-          ? { id: result.documentId, filename: title, stage: result.status === "duplicate" ? "done" : "received", status: result.status === "duplicate" ? "processed" : "queued" }
+          ? { id: result.documentId, filename: title, stage: "received", status: "queued" }
           : { id: null, filename: title, stage: "failed", status: "failed", error: result.message },
       ];
     });
@@ -152,7 +152,12 @@ export function UploadFlow({ welcome }: { welcome: boolean }) {
     const ids = docs.filter((d) => d.id && d.status !== "failed" && d.status !== "unsupported").map((d) => d.id!) ;
     const failures = docs.filter((d) => !d.id || d.status === "failed" || d.status === "unsupported" || (d.status === "needs_review" && d.error));
     (async () => {
-      const r = ids.length ? await fetch(`/api/discoveries?ids=${ids.join(",")}`, { cache: "no-store" }).then((x) => x.json()) : { found: [], unknowns: [] };
+      let r: { found?: Discovery[]; unknowns?: Discovery[] } = { found: [], unknowns: [] };
+      if (ids.length) {
+        const res = await fetch(`/api/discoveries?ids=${ids.join(",")}`, { cache: "no-store" }).catch(() => null);
+        if (res?.ok) r = await res.json();
+        else failures.push({ id: null, filename: "Results", stage: "failed", status: "failed", error: "Your document was saved, but we couldn't load what we found. Check Documents or try again." });
+      }
       setResult({ found: r.found ?? [], unknowns: r.unknowns ?? [], failures });
       setPhase("reveal");
     })();

@@ -73,3 +73,23 @@ describe("first-run samples (end to end)", () => {
     expect(code.valueText).toBe("•••• 3516");
   });
 });
+
+describe("stuck documents", () => {
+  beforeEach(resetDb);
+
+  it("re-processes a duplicate upload whose first attempt never finished", async () => {
+    const { adminPool } = await import("../helpers/db");
+    const u = await createUser();
+    const s = await buildSample("receipt", todayIn(u.timezone));
+    const first = await ingest({ userId: u.id, source: "sample", bytes: s.bytes, filename: s.filename });
+    if (first.status !== "accepted") throw new Error(first.status);
+    // Simulate "saved but never read" (no worker running), a few minutes ago.
+    await adminPool().query(`delete from items where document_id = $1`, [first.documentId]);
+    await adminPool().query(`update documents set status='queued', stage='received', created_at = now() - interval '5 minutes' where id = $1`, [first.documentId]);
+
+    const again = await ingest({ userId: u.id, source: "sample", bytes: s.bytes, filename: s.filename });
+    expect(again).toEqual({ status: "duplicate", documentId: first.documentId });
+    expect((await getDocument(u.id, first.documentId)).status).toBe("processed");
+    expect((await getDiscoveries(u.id, [first.documentId])).found.length).toBe(4);
+  });
+});

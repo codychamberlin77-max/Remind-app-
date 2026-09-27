@@ -37,6 +37,21 @@ export function safeDisplayName(name: string): string {
   return cleaned || "document";
 }
 
+/** Re-queue a document that was saved but never finished (e.g. no worker was running). */
+async function retryIfStuck(userId: string, documentId: string) {
+  const [doc] = await withUser(userId, (tx) =>
+    tx
+      .select({ status: schema.documents.status, createdAt: schema.documents.createdAt })
+      .from(schema.documents)
+      .where(and(eq(schema.documents.userId, userId), eq(schema.documents.id, documentId))),
+  );
+  if (!doc) return;
+  const stale = Date.now() - doc.createdAt.getTime() > 60_000;
+  if (doc.status === "failed" || ((doc.status === "queued" || doc.status === "processing") && stale)) {
+    await enqueue(QUEUES.processDocument, { userId, documentId });
+  }
+}
+
 export async function ingest(input: RawInput): Promise<IngestResult> {
   const v = await validateFile(input.bytes, env().MAX_UPLOAD_BYTES);
   if (!v.ok) return { status: "rejected", code: v.code, message: v.message };
@@ -59,7 +74,10 @@ export async function ingest(input: RawInput): Promise<IngestResult> {
     }
     return {} as const;
   });
-  if ("duplicateOf" in pre && pre.duplicateOf) return { status: "duplicate", documentId: pre.duplicateOf };
+  if ("duplicateOf" in pre && pre.duplicateOf) {
+    await retryIfStuck(input.userId, pre.duplicateOf);
+    return { status: "duplicate", documentId: pre.duplicateOf };
+  }
   if ("overLimit" in pre) {
     return { status: "rejected", code: "limit_reached", message: "You've reached the document limit for your plan." };
   }

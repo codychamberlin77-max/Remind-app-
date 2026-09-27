@@ -11,6 +11,7 @@
     "build": "next build",
     "start": "tsx scripts/migrate.ts --if-configured && next start -p ${PORT:-3000}",
     "worker": "tsx --tsconfig tsconfig.json src/server/jobs/worker.ts",
+    "serve": "sh -c 'if [ \"$LIFEOS_ROLE\" = worker ]; then npm run worker; else npm run start; fi'",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

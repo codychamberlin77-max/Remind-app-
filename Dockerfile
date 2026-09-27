@@ -1,4 +1,5 @@
-# One image for both Railway services (web + worker); each sets its own start command.
+# One image for both Railway services. Set LIFEOS_ROLE=worker on the worker service;
+# anything else (or unset) runs the web app.
 FROM node:22-bookworm-slim
 
 WORKDIR /app
@@ -12,4 +13,4 @@ RUN npm run build
 
 ENV NODE_ENV=production
 EXPOSE 3000
-CMD ["npm", "run", "start"]
+CMD ["npm", "run", "serve"]
