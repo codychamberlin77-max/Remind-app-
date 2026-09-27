@@ -25,7 +25,7 @@ export default async function Documents() {
     <div>
       <div className="flex items-end justify-between">
         <div>
-          <h1 className="text-[28px] font-semibold tracking-[-0.03em]">Documents</h1>
+          <h1 className="display-2 text-[36px] sm:text-[44px]">Documents</h1>
           <p className="text-muted text-[14px] mt-1">{docs.length} {docs.length === 1 ? "document" : "documents"}. Deleting one removes everything we found in it.</p>
         </div>
         <Button asChild size="sm"><Link href="/add">Add</Link></Button>

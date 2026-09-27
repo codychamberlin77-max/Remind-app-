@@ -1,8 +1,9 @@
 "use client";
-import { ArrowRight, Camera, Check, CircleAlert, Eye, FileUp, Info, Loader2, Pencil, Plane, ReceiptText, Tv } from "lucide-react";
+import { ArrowRight, Camera, Check, CircleAlert, Eye, FileUp, Info, Loader2, Pencil } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState, useTransition } from "react";
 import { confirmFactAction } from "@/app/(app)/actions";
+import { CreditBuddy, ReceiptBuddy, TrialBuddy } from "@/components/brand/stickers";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CertaintyBadge } from "@/components/ui/certainty";
@@ -40,9 +41,9 @@ const TERMINAL = new Set(["processed", "needs_review", "failed", "unsupported"])
 const MIN_STAGE_MS = 420;
 
 const SAMPLES = [
-  { id: "receipt", title: "Electronics receipt", sub: "Best Buy · Samsung TV", icon: Tv },
-  { id: "trial", title: "Free-trial email", sub: "Streaming subscription", icon: ReceiptText },
-  { id: "credit", title: "Airline credit", sub: "Delta eCredit", icon: Plane },
+  { id: "receipt", title: "Electronics receipt", sub: "Best Buy · Samsung TV", Sticker: ReceiptBuddy, tone: "bg-blue" },
+  { id: "trial", title: "Free-trial email", sub: "Streaming subscription", Sticker: TrialBuddy, tone: "bg-grape" },
+  { id: "credit", title: "Airline credit", sub: "Delta eCredit", Sticker: CreditBuddy, tone: "bg-coral" },
 ] as const;
 
 export function UploadFlow({ welcome }: { welcome: boolean }) {
@@ -170,7 +171,7 @@ export function UploadFlow({ welcome }: { welcome: boolean }) {
   if (phase === "working") {
     return (
       <div className="animate-fade">
-        <h1 className="text-[26px] sm:text-[30px] font-semibold tracking-[-0.025em]">Looking through {docs.length > 1 ? `${docs.length} documents` : "your document"}…</h1>
+        <h1 className="display-2 text-[30px] sm:text-[40px]">Looking through {docs.length > 1 ? `${docs.length} documents` : "your document"}…</h1>
         <p className="text-muted mt-2">This usually takes a few seconds.</p>
         <div className="mt-8 space-y-3">
           {docs.map((d, i) => {
@@ -197,7 +198,7 @@ export function UploadFlow({ welcome }: { welcome: boolean }) {
 
   return (
     <div className="animate-rise">
-      <h1 className="text-[28px] sm:text-[34px] font-semibold tracking-[-0.03em] leading-tight">
+      <h1 className="display-2 text-[36px] sm:text-[48px]">
         {welcome ? "Let's find what you're forgetting." : "Add something new."}
       </h1>
       <p className="text-muted mt-2.5 text-[16px]">Upload a receipt, document, screenshot, or PDF.</p>
@@ -207,14 +208,14 @@ export function UploadFlow({ welcome }: { welcome: boolean }) {
         onDragLeave={() => setDragging(false)}
         onDrop={(e) => { e.preventDefault(); setDragging(false); void uploadFiles(e.dataTransfer.files); }}
         className={cn(
-          "mt-8 rounded-[22px] border-[1.5px] border-dashed px-6 py-12 sm:py-16 text-center transition-colors",
-          dragging ? "border-ink bg-surface" : "border-line-strong bg-surface/60",
+          "mt-8 rounded-[28px] border-2 border-dashed px-6 py-12 sm:py-16 text-center transition-colors",
+          dragging ? "border-blue bg-blue-soft" : "border-line-strong bg-tile",
         )}
       >
-        <span className="mx-auto grid place-items-center size-12 rounded-2xl bg-canvas shadow-[var(--shadow-card)]">
-          <FileUp className="size-5 text-ink-2" />
+        <span className="mx-auto grid place-items-center size-14 rounded-[18px] bg-blue text-white rotate-[-6deg]">
+          <FileUp className="size-6" strokeWidth={2.2} />
         </span>
-        <p className="mt-5 font-medium text-[16px]">Drop files here</p>
+        <p className="mt-5 font-display font-semibold text-[20px] tracking-[-0.02em]">Drop files here</p>
         <p className="text-[13.5px] text-subtle mt-1">PDF, JPG, PNG, WebP, screenshots, or saved emails (.eml) · up to 20 MB</p>
         <div className="mt-6 flex flex-col sm:flex-row gap-2.5 justify-center">
           <Button size="lg" onClick={() => fileInput.current?.click()}>Choose files</Button>
@@ -229,27 +230,30 @@ export function UploadFlow({ welcome }: { welcome: boolean }) {
 
       <div className="mt-5 flex flex-wrap gap-2">
         {["Your last online order", "A free-trial email", "An airline credit", "A warranty card", "A bill"].map((s) => (
-          <span key={s} className="h-8 px-3 inline-flex items-center rounded-full bg-surface shadow-[var(--shadow-card)] text-[13px] text-muted">{s}</span>
+          <span key={s} className="h-9 px-4 inline-flex items-center rounded-full bg-tile text-[13.5px] font-medium text-ink-2">{s}</span>
         ))}
       </div>
 
-      <Link href="/email" className="mt-6 flex items-center justify-between gap-3 p-4 rounded-2xl bg-surface shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-pop)] transition-shadow">
+      <Link href="/email" className="mt-6 flex items-center justify-between gap-3 p-5 rounded-[22px] bg-grape text-white press">
         <span>
-          <span className="block text-[14px] font-medium">Most of this is in your email</span>
-          <span className="block text-[12.5px] text-subtle">Forward receipts and trials automatically, or import past email from Google.</span>
+          <span className="block font-display text-[18px] font-semibold tracking-[-0.02em]">Most of this is in your email</span>
+          <span className="block text-[13.5px] text-white/75 mt-0.5">Forward receipts and trials automatically, or import past email.</span>
         </span>
-        <ArrowRight className="size-4 text-muted shrink-0" />
+        <span className="grid place-items-center size-10 rounded-full bg-white text-grape shrink-0"><ArrowRight className="size-4" /></span>
       </Link>
 
       <div className="mt-12">
-        <p className="text-[13px] font-semibold text-ink-2 px-1">No file handy? Try a sample.</p>
+        <p className="font-display text-[20px] font-semibold tracking-[-0.02em] px-1">No file handy? Try a sample.</p>
         <p className="text-[13px] text-subtle px-1 mt-0.5">Samples are processed on our servers only. Nothing is sent to an AI provider.</p>
         <div className="mt-3 grid sm:grid-cols-3 gap-2.5">
           {SAMPLES.map((s) => (
-            <button key={s.id} onClick={() => trySample(s.id, s.title)} className="group text-left p-4 rounded-2xl bg-surface shadow-[var(--shadow-card)] hover:shadow-[var(--shadow-pop)] transition-shadow">
-              <s.icon className="size-4 text-muted" />
-              <p className="mt-3 text-[14px] font-medium">{s.title}</p>
-              <p className="text-[12.5px] text-subtle">{s.sub}</p>
+            <button key={s.id} onClick={() => trySample(s.id, s.title)} className={cn("group text-left p-4 rounded-[22px] text-white press overflow-hidden", s.tone)}>
+              <span className="relative grid place-items-center h-28">
+                <span className="absolute size-24 rounded-full bg-white" />
+                <s.Sticker className="relative w-[72px] transition-transform duration-300 group-hover:-translate-y-1 group-hover:rotate-[-5deg]" />
+              </span>
+              <p className="mt-2 font-display text-[17px] font-semibold tracking-[-0.02em]">{s.title}</p>
+              <p className="text-[13px] text-white/75">{s.sub}</p>
             </button>
           ))}
         </div>
@@ -265,13 +269,13 @@ function Reveal({ result, onAnother }: { result: { found: Discovery[]; unknowns:
     <div>
       <div className="animate-rise">
         {n > 0 ? (
-          <h1 className="text-[28px] sm:text-[34px] font-semibold tracking-[-0.03em] leading-tight">
+          <h1 className="display-2 text-[34px] sm:text-[46px]">
             We found {n} {n === 1 ? "thing" : "things"} worth knowing.
           </h1>
         ) : onlyDocs ? (
-          <h1 className="text-[26px] sm:text-[30px] font-semibold tracking-[-0.025em]">Saved. No deadlines in this one.</h1>
+          <h1 className="display-2 text-[30px] sm:text-[40px]">Saved. No deadlines in this one.</h1>
         ) : (
-          <h1 className="text-[26px] sm:text-[30px] font-semibold tracking-[-0.025em]">We couldn&apos;t read that.</h1>
+          <h1 className="display-2 text-[30px] sm:text-[40px]">We couldn&apos;t read that.</h1>
         )}
         {n > 0 ? <p className="text-muted mt-2">Check anything marked estimated. You can correct any detail.</p> : null}
       </div>
@@ -331,13 +335,13 @@ function DiscoveryCard({ d, delay }: { d: Discovery; delay: number }) {
 
   if (d.kind === "money") {
     return (
-      <Card className="p-5 animate-rise bg-confirmed-bg/60" style={{ animationDelay: `${delay}ms` }}>
+      <Card className="p-5 animate-rise bg-leaf text-white" style={{ animationDelay: `${delay}ms` }}>
         <div className="flex items-center justify-between gap-4">
           <div>
-            <p className="text-[13px] text-confirmed font-medium">{d.label}</p>
-            <p className="text-[12.5px] text-muted mt-1 max-w-sm leading-relaxed flex gap-1.5"><Info className="size-3.5 mt-0.5 shrink-0" />{d.detail}</p>
+            <p className="text-[13.5px] font-semibold">{d.label}</p>
+            <p className="text-[12.5px] text-white/80 mt-1 max-w-sm leading-relaxed flex gap-1.5"><Info className="size-3.5 mt-0.5 shrink-0" />{d.detail}</p>
           </div>
-          <p className="text-[26px] font-semibold tracking-[-0.02em] text-money tabular">{d.value}</p>
+          <p className="font-display text-[34px] font-semibold tracking-[-0.035em] tabular">{d.value}</p>
         </div>
       </Card>
     );

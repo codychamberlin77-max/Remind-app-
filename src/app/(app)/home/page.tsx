@@ -2,13 +2,16 @@ import { ArrowRight, Info, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AttentionCard, CompactRow } from "@/components/app/action-card";
-import { Button } from "@/components/ui/button";
 import { Card, SectionTitle } from "@/components/ui/card";
+import { Coin } from "@/components/brand/stickers";
+import { cn } from "@/lib/cn";
 import { formatMoney } from "@/lib/money";
 import { requireUser } from "@/server/auth/session";
 import { getDashboard } from "@/server/services/items";
 
 export const metadata = { title: "Home" };
+
+const KIND_DOT: Record<string, string> = { purchase: "bg-blue", subscription: "bg-grape", travel_credit: "bg-coral", warranty: "bg-leaf", bill: "bg-sun" };
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
@@ -23,7 +26,7 @@ export default async function Home() {
     <div className="space-y-10">
       <header className="animate-rise">
         <p className="text-[14px] text-muted">{hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening"}, {user.name.split(" ")[0]}</p>
-        <h1 className="mt-1 text-[28px] sm:text-[32px] font-semibold tracking-[-0.03em] leading-tight">
+        <h1 className="mt-2 display-2 text-[34px] sm:text-[44px]">
           {attention.length === 0
             ? "Nothing needs your attention right now."
             : attention.length === 1
@@ -32,25 +35,26 @@ export default async function Home() {
         </h1>
 
         <div className="mt-6 grid grid-cols-2 gap-3">
-          <Card className="p-4">
-            <p className="text-[12.5px] text-muted flex items-center gap-1.5">
+          <div className="relative overflow-hidden rounded-[var(--radius-card)] bg-leaf text-white p-4 sm:p-5">
+            <Coin className="absolute -right-3 -top-3 w-16 sm:w-20 rotate-12 opacity-95" />
+            <p className="relative text-[12.5px] sm:text-[13.5px] font-medium text-white/85 flex items-center gap-1.5">
               Money protected
-              <span title="The value of purchases and credits with an open return window, warranty, or expiry that we're tracking. This is not money saved." className="cursor-help"><Info className="size-3.5 text-subtle" /></span>
+              <span title="The value of purchases and credits with an open return window, warranty, or expiry that we're tracking. This is not money saved." className="cursor-help"><Info className="size-3.5 text-white/70" /></span>
             </p>
-            <p className="mt-1 text-[22px] font-semibold tracking-[-0.02em] text-money tabular">{formatMoney(d.money.protectedCents, d.money.currency)}</p>
-            <p className="text-[12px] text-subtle">{d.money.itemCount} {d.money.itemCount === 1 ? "item" : "items"} with an open window</p>
-          </Card>
-          <Card className="p-4">
+            <p className="relative mt-1 font-display text-[26px] sm:text-[34px] font-semibold tracking-[-0.035em] tabular">{formatMoney(d.money.protectedCents, d.money.currency)}</p>
+            <p className="relative text-[12px] sm:text-[13px] text-white/75">{d.money.itemCount} {d.money.itemCount === 1 ? "item" : "items"} with an open window</p>
+          </div>
+          <Card className="p-4 sm:p-5">
             {d.money.savedCents > 0 ? (
               <>
                 <p className="text-[12.5px] text-muted">Money saved</p>
-                <p className="mt-1 text-[22px] font-semibold tracking-[-0.02em] tabular">{formatMoney(d.money.savedCents, d.money.currency)}</p>
+                <p className="mt-1 font-display text-[26px] sm:text-[34px] font-semibold tracking-[-0.035em] tabular">{formatMoney(d.money.savedCents, d.money.currency)}</p>
                 <p className="text-[12px] text-subtle">Confirmed by you</p>
               </>
             ) : (
               <>
                 <p className="text-[12.5px] text-muted">Tracking</p>
-                <p className="mt-1 text-[22px] font-semibold tracking-[-0.02em] tabular">{d.counts.items}</p>
+                <p className="mt-1 font-display text-[26px] sm:text-[34px] font-semibold tracking-[-0.035em] tabular">{d.counts.items}</p>
                 <p className="text-[12px] text-subtle">{d.counts.items === 1 ? "item" : "items"} from {d.counts.documents} {d.counts.documents === 1 ? "document" : "documents"}</p>
               </>
             )}
@@ -87,8 +91,11 @@ export default async function Home() {
           <div className="grid sm:grid-cols-2 gap-3">
             {d.recentlyDiscovered.map((i) => (
               <Link key={i.id} href={`/items/${i.id}`} className="block">
-                <Card className="p-4 h-full hover:shadow-[var(--shadow-pop)] transition-shadow">
-                  <p className="text-[12px] text-subtle capitalize">{i.kind.replace("_", " ")}</p>
+                <Card className="p-4 h-full press hover:bg-hover transition-colors">
+                  <p className="text-[12px] font-semibold capitalize flex items-center gap-1.5">
+                    <span className={cn("size-2.5 rounded-full", KIND_DOT[i.kind] ?? "bg-subtle")} />
+                    <span className="text-muted">{i.kind.replace("_", " ")}</span>
+                  </p>
                   <p className="text-[14.5px] font-medium mt-1 line-clamp-2">{i.title}</p>
                   {i.headline ? <p className="text-[13px] text-muted mt-1 tabular">{i.headline}</p> : null}
                   {i.needsReview ? <p className="text-[12px] text-estimated mt-2">Needs a quick check</p> : null}
@@ -121,13 +128,13 @@ export default async function Home() {
         </section>
       ) : null}
 
-      <Card className="p-5 flex items-center justify-between gap-4">
-        <div>
-          <p className="font-medium text-[15px]">Got more?</p>
-          <p className="text-[13.5px] text-muted">Receipts, subscription emails, credits, warranties. Or <Link href="/email" className="underline">forward your email</Link>.</p>
+      <div className="relative overflow-hidden rounded-[var(--radius-card)] bg-ink text-white p-6 flex items-center justify-between gap-4">
+        <div className="relative z-10">
+          <p className="font-display text-[22px] font-semibold tracking-[-0.025em]">Got more?</p>
+          <p className="text-[14px] text-white/65 mt-1">Receipts, subscription emails, credits, warranties. Or <Link href="/email" className="underline text-white">forward your email</Link>.</p>
         </div>
-        <Button asChild variant="secondary"><Link href="/add">Add <ArrowRight className="size-3.5" /></Link></Button>
-      </Card>
+        <Link href="/add" className="relative z-10 inline-flex items-center gap-2 h-10 px-5 rounded-full bg-white text-ink text-sm font-medium shrink-0 press">Add <ArrowRight className="size-3.5" /></Link>
+      </div>
     </div>
   );
 }

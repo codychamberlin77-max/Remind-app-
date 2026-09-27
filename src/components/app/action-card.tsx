@@ -20,6 +20,16 @@ const ICONS: Record<string, typeof Check> = {
   pay_bill: ReceiptText,
 };
 
+/** Sticker palette per action type (matches the landing page tiles). */
+const TONES: Record<string, string> = {
+  return: "bg-blue text-white",
+  cancel_trial: "bg-grape text-white",
+  review_renewal: "bg-grape text-white",
+  use_credit: "bg-coral text-white",
+  warranty_expiring: "bg-leaf text-white",
+  pay_bill: "bg-sun text-ink",
+};
+
 function dueLabel(c: Card) {
   if (!c.dueOn || !c.relative) return null;
   return `${c.relative.charAt(0).toUpperCase()}${c.relative.slice(1)}`;
@@ -35,15 +45,15 @@ export function AttentionCard({ c }: { c: Card }) {
   return (
     <div className="bg-surface rounded-[var(--radius-card)] shadow-[var(--shadow-card)] p-5 transition-opacity" style={{ opacity: pending ? 0.5 : 1 }}>
       <div className="flex items-start gap-4">
-        <span className={cn("grid place-items-center size-10 rounded-xl shrink-0", urgent ? "bg-urgent-bg text-urgent" : "bg-canvas text-ink-2")}>
-          <Icon className="size-[18px]" />
+        <span className={cn("grid place-items-center size-11 rounded-2xl shrink-0 rotate-[-4deg]", TONES[c.type] ?? "bg-tile text-ink-2")}>
+          <Icon className="size-5" strokeWidth={2.2} />
         </span>
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-3">
             <Link href={`/items/${c.itemId}`} className="min-w-0 group">
-              <p className="text-[15.5px] font-semibold tracking-[-0.01em] leading-snug group-hover:underline underline-offset-2 decoration-line-strong">{c.title}</p>
+              <p className="font-display text-[17px] font-semibold tracking-[-0.02em] leading-snug group-hover:underline underline-offset-2 decoration-line-strong">{c.title}</p>
             </Link>
-            {c.valueCents != null ? <p className="text-[15px] font-semibold tabular shrink-0">{formatMoney(c.valueCents, c.currency ?? "USD")}</p> : null}
+            {c.valueCents != null ? <p className="font-display text-[17px] font-semibold tracking-[-0.02em] tabular shrink-0">{formatMoney(c.valueCents, c.currency ?? "USD")}</p> : null}
           </div>
           <p className="text-[14.5px] text-ink-2 mt-1 leading-relaxed">{c.reason}</p>
           <div className="mt-2.5 flex flex-wrap items-center gap-2">
@@ -68,7 +78,9 @@ export function CompactRow({ c }: { c: Card }) {
   const Icon = ICONS[c.type] ?? FileText;
   return (
     <Link href={`/items/${c.itemId}`} className="flex items-center gap-3.5 px-4 py-3.5 hover:bg-hover transition-colors">
-      <Icon className="size-4 text-subtle shrink-0" />
+      <span className={cn("grid place-items-center size-8 rounded-xl shrink-0", TONES[c.type] ?? "bg-surface text-ink-2")}>
+        <Icon className="size-4" strokeWidth={2.2} />
+      </span>
       <div className="flex-1 min-w-0">
         <p className="text-[14.5px] font-medium truncate">{c.title}</p>
         <p className="text-[13px] text-muted truncate">{c.reason}</p>

@@ -42,7 +42,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
           {res.total ? (
             <Card className="mt-3 p-5">
               <p className="text-[13px] text-muted">{res.total.label}</p>
-              <p className="text-[28px] font-semibold tracking-[-0.02em] tabular mt-0.5">{formatMoney(res.total.cents, res.total.currency)}</p>
+              <p className="font-display text-[32px] font-semibold tracking-[-0.035em] tabular mt-0.5">{formatMoney(res.total.cents, res.total.currency)}</p>
               <p className="text-[12.5px] text-subtle">{res.total.count} {res.total.count === 1 ? "item" : "items"}</p>
             </Card>
           ) : null}

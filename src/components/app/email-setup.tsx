@@ -414,9 +414,9 @@ export function EmailSetup({ initialStatus, initialImports }: { initialStatus: S
 function Header() {
   return (
     <div className="flex items-start gap-3">
-      <span className="size-10 rounded-xl bg-hover grid place-items-center shrink-0"><Mail className="size-5" /></span>
+      <span className="size-12 rounded-2xl bg-grape text-white grid place-items-center shrink-0 rotate-[-6deg]"><Mail className="size-6" /></span>
       <div>
-        <h1 className="text-[28px] font-semibold tracking-[-0.03em] leading-tight">Email</h1>
+        <h1 className="display-2 text-[36px] sm:text-[44px]">Email</h1>
         <p className="text-muted text-[14px] mt-1 flex items-center gap-1.5"><Inbox className="size-3.5" /> Send receipts and subscription emails to LIFEOS automatically.</p>
       </div>
     </div>

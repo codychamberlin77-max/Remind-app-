@@ -19,7 +19,7 @@ export default async function Settings() {
     <div className="space-y-10">
       <div className="flex items-end justify-between">
         <div>
-          <h1 className="text-[28px] font-semibold tracking-[-0.03em]">Settings</h1>
+          <h1 className="display-2 text-[36px] sm:text-[44px]">Settings</h1>
           <p className="text-muted text-[14px] mt-1">{user.email}</p>
         </div>
         <SignOut />

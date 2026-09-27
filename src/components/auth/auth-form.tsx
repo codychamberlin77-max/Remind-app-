@@ -45,7 +45,7 @@ export function AuthForm({ mode, googleEnabled }: { mode: "sign-in" | "sign-up";
 
   return (
     <div>
-      <h1 className="text-[26px] font-semibold tracking-[-0.02em]">{signUp ? "Let's find what you're forgetting." : "Welcome back."}</h1>
+      <h1 className="display-2 text-[34px]">{signUp ? "Let's find what you're forgetting." : "Welcome back."}</h1>
       <p className="text-muted mt-2 text-[15px]">{signUp ? "Create your account. It takes a few seconds." : "Sign in to see what needs your attention."}</p>
 
       {googleEnabled ? (

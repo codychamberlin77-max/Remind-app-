@@ -72,7 +72,7 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
 
       <header className="animate-rise">
         <p className="text-[13px] text-muted">{KIND_LABEL[item.kind] ?? "Item"}{item.merchant && item.kind !== "subscription" ? ` · ${item.merchant}` : ""}</p>
-        <h1 className="mt-1 text-[28px] sm:text-[32px] font-semibold tracking-[-0.03em] leading-tight">{item.title}</h1>
+        <h1 className="mt-2 display-2 text-[32px] sm:text-[42px]">{item.title}</h1>
         {headlineFact ? (
           <p className="mt-2 text-[24px] font-semibold tabular tracking-[-0.02em]">
             {formatMoney(headlineFact.valueCents, headlineFact.currency ?? "USD")}
