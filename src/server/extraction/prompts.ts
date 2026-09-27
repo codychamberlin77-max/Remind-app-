@@ -1,7 +1,7 @@
 import type { ExtractionFamily } from "./schemas";
 
 /** Bump when any prompt text changes; stored on every extraction. */
-export const PROMPT_VERSION = "2026-09-27.1";
+export const PROMPT_VERSION = "2026-09-27.2";
 
 const CORE_RULES = `You extract facts from a single personal document (receipt, order email, subscription notice, warranty, travel credit, bill, etc.) for a life-admin app. The app uses your output to warn people about deadlines, so a wrong date is far worse than a missing one.
 
@@ -24,7 +24,7 @@ export const TRANSCRIBE_SYSTEM = `Transcribe the document image exactly as print
 const FAMILY_GUIDANCE: Record<ExtractionFamily, string> = {
   purchase: `Task: extract the purchase. line_items lists products (not tax, shipping, or fees). return_policy and warranty describe ONLY what this document states — including protection plans (e.g. "2-Year Protection Plan"). If there is no stated return period, return_days.value and return_by_date.value must be null.`,
   subscription: `Task: extract the subscription or free trial. trial_end_date is when a trial converts to paid; next_renewal_date is the next charge date. Include email_sent_date if the message shows a sent date.`,
-  warranty: `Task: extract the warranty or protection plan. Report end_date only if printed; otherwise report duration_months and start_date/purchase_date if printed.`,
+  warranty: `Task: extract the warranty or protection plan. product_name is the covered product itself (e.g. "MacBook Pro 14-inch"), not the plan's name; put the plan or company (e.g. "AppleCare+") in provider. Report end_date only if printed; otherwise report duration_months and start_date/purchase_date if printed.`,
   travel_credit: `Task: extract the travel credit / voucher / eCredit. expiration_rule says whether the date is a deadline to book or to complete travel, if stated.`,
   generic: `Task: extract a short title, the organization, the main amount, and any clearly labeled dates (due date, appointment time, expiration, renewal).`,
 };

@@ -10,7 +10,7 @@ import type {
   VerifiedWarranty,
 } from "@/server/extraction/verify";
 import { findManufacturerWarranty, findMerchantPolicy, looksLikeElectronics } from "./merchantPolicies";
-import { planFromFacts, type FactLike, type PlannedAction, type PlannedProtection } from "./plan";
+import { factNeedsReview, planFromFacts, type FactLike, type PlannedAction, type PlannedProtection } from "./plan";
 
 /**
  * Deterministic rules engine: verified facts in → item facts out. Deadlines are
@@ -134,7 +134,7 @@ function cleanProductName(name: string): string {
 
 function needsReviewFrom(facts: DerivedFact[], ctx: DeriveContext): boolean {
   if (ctx.classificationConfidence < 0.6) return true;
-  return facts.some((f) => f.certainty === "estimated" && (f.basis === "unclear_on_document" || f.basis === "inferred"));
+  return facts.some(factNeedsReview);
 }
 
 export function durationText(months: number): string {

@@ -89,9 +89,12 @@ export function verifyText(f: TextField | undefined, ctx: VerifyContext, label: 
 
 function tokensOverlap(a: string, b: string): number {
   const ta = normalizeForMatch(a).split(/[^a-z0-9]+/).filter(Boolean);
-  const tb = new Set(normalizeForMatch(b).split(/[^a-z0-9]+/).filter(Boolean));
+  const bTokens = normalizeForMatch(b).split(/[^a-z0-9]+/).filter(Boolean);
+  const tb = new Set(bTokens);
   if (!ta.length) return 0;
-  return ta.filter((t) => tb.has(t)).length / ta.length;
+  // "Apple" in "AppleCare+" counts: brand names are often fused into product names.
+  const hit = (t: string) => tb.has(t) || (t.length >= 3 && bTokens.some((x) => x.startsWith(t)));
+  return ta.filter(hit).length / ta.length;
 }
 
 /** Money must be quoted verbatim; otherwise it is dropped (never shown as fact). */

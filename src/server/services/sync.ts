@@ -1,6 +1,6 @@
 import { and, eq, inArray } from "drizzle-orm";
 import { schema, type Tx } from "@/server/db/client";
-import { planFromFacts, type FactLike } from "@/server/derivation/plan";
+import { factNeedsReview, planFromFacts, type FactLike } from "@/server/derivation/plan";
 import { priorityReason, priorityScore } from "@/server/derivation/priority";
 import { rescheduleForAction } from "./reminders";
 
@@ -77,7 +77,7 @@ export async function syncItemFromFacts(tx: Tx, userId: string, itemId: string, 
       amountCents: amount?.certainty !== "unknown" ? amount?.valueCents ?? null : null,
       currency: amount?.currency ?? item.currency,
       primaryDate: primaryKey ? get(primaryKey)?.valueDate ?? null : item.primaryDate,
-      needsReview: facts.some((f) => f.certainty === "estimated" && (f.basis === "unclear_on_document" || f.basis === "inferred") && !f.userConfirmedAt),
+      needsReview: facts.some(factNeedsReview),
     })
     .where(eq(schema.items.id, itemId));
 

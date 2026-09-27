@@ -236,3 +236,14 @@ export function planFromFacts(item: PlanInput, today: string): { protections: Pl
       .filter((a) => (seen.has(a.type) ? false : (seen.add(a.type), true))),
   };
 }
+
+/**
+ * Facts that don't drive a deadline, an amount, or the item's identity. An
+ * uncertain value here is shown as estimated but doesn't flag the whole item.
+ */
+export const NON_CRITICAL_FACTS = new Set(["provider", "coverage", "order_number", "credit_code", "organization", "start_date"]);
+
+export function factNeedsReview(f: { key: string; certainty: string; basis: string; userConfirmedAt?: Date | null }): boolean {
+  if (NON_CRITICAL_FACTS.has(f.key) || f.userConfirmedAt) return false;
+  return f.certainty === "estimated" && (f.basis === "unclear_on_document" || f.basis === "inferred");
+}

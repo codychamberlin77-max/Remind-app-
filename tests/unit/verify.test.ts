@@ -79,3 +79,19 @@ describe("verification", () => {
     expect(v.basis).toBe("inferred");
   });
 });
+
+describe("real-model regressions", () => {
+  it("treats a brand fused into a product name as grounded (Apple → AppleCare+)", () => {
+    const d = new DocumentIndex("AppleCare+ for Mac\nProof of Coverage");
+    const v = verifyText({ value: "Apple", evidence: "AppleCare+ for Mac", confidence: 0.9 }, ctx({ index: d }), "provider");
+    expect(v.certainty).toBe("confirmed");
+  });
+
+  it("an uncertain provider or coverage note doesn't put the whole item up for review", async () => {
+    const { factNeedsReview } = await import("@/server/derivation/plan");
+    expect(factNeedsReview({ key: "provider", certainty: "estimated", basis: "unclear_on_document" })).toBe(false);
+    expect(factNeedsReview({ key: "warranty_end", certainty: "estimated", basis: "unclear_on_document" })).toBe(true);
+    expect(factNeedsReview({ key: "warranty_end", certainty: "estimated", basis: "merchant_policy" })).toBe(false);
+    expect(factNeedsReview({ key: "total", certainty: "estimated", basis: "inferred", userConfirmedAt: new Date() })).toBe(false);
+  });
+});
