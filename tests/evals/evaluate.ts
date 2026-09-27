@@ -16,6 +16,8 @@ export type CaseResult = {
   id: string;
   covers: string;
   documentType: string | null;
+  classificationConfidence: number | null;
+  actualItems: Array<{ kind: string; title: string; needsReview: boolean; facts: string[] }>;
   status: { expected: string; actual: string; ok: boolean; reason: string | null };
   facts: Array<{
     item: number;
@@ -106,6 +108,7 @@ async function runCase(c: EvalCase, manifest: Record<string, { file: string; sha
   let rejected = 0;
   let processingMs: number | null = null;
   let documentType: string | null = null;
+  let classificationConfidence: number | null = null;
   let failureReason: string | null = null;
   let warnings: string[] = [];
   const tokens = { input: 0, output: 0 };
@@ -126,6 +129,7 @@ async function runCase(c: EvalCase, manifest: Record<string, { file: string; sha
       const [ex] = await tx.select().from(schema.documentExtractions).where(eq(schema.documentExtractions.documentId, documentId));
       if (ex) {
         documentType = ex.documentType;
+        classificationConfidence = ex.classificationConfidence;
         warnings = ex.warnings;
         proposed = countProposed(ex.rawOutput);
         rejected = ex.warnings.filter((w) => REJECTION.test(w)).length;
@@ -180,6 +184,15 @@ async function runCase(c: EvalCase, manifest: Record<string, { file: string; sha
     id: c.id,
     covers: c.covers,
     documentType,
+    classificationConfidence,
+    actualItems: items.map((i) => ({
+      kind: i.kind,
+      title: i.title,
+      needsReview: i.needsReview,
+      facts: facts
+        .filter((f) => f.itemId === i.id)
+        .map((f) => `${f.key}=${f.certainty}${f.valueDate ? `:${f.valueDate}` : f.valueCents != null ? `:${f.valueCents}` : ""}(${f.basis},${f.confidence})`),
+    })),
     status: { expected: asList(expected.status).join(" or "), actual: actualStatus, ok: (asList(expected.status) as string[]).includes(actualStatus), reason: failureReason },
     warnings,
     facts: factResults,
@@ -300,7 +313,10 @@ export function formatReport(r: EvalReport): string {
       ...c.deadlines.falseDeadlines.map((d) => `FALSE DEADLINE: ${d}`),
       ...c.deadlines.missed.map((d) => `missed deadline: ${d}`),
     ].filter(Boolean);
-    const diag = bad.length ? `  [type=${c.documentType ?? "—"}${c.warnings.length ? ` warnings=${c.warnings.join(",")}` : ""}]` : "";
+    const diag = bad.length
+      ? `  [type=${c.documentType ?? "—"} conf=${c.classificationConfidence ?? "—"}${c.warnings.length ? ` warnings=${c.warnings.join(",")}` : ""}]` +
+        c.actualItems.map((i) => `\n      got item: ${i.kind} "${i.title}"${i.needsReview ? " (needs review)" : ""} ${i.facts.join(" ")}`).join("")
+      : "";
     lines.push(`  ${bad.length ? "✗" : "✓"} ${c.id.padEnd(26)} ${c.processingMs ?? "—"}ms  ${bad.join("; ")}${diag}`);
   }
   return lines.join("\n");
