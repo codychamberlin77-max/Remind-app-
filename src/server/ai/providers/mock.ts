@@ -38,7 +38,7 @@ async function loadBuiltins() {
     try {
       const { readFile } = await import("node:fs/promises");
       const file = process.env.LIFEOS_MOCK_RECORDINGS ?? `${process.cwd()}/tests/evals/fixtures/recordings.json`;
-      registerMockRecordings(JSON.parse(await readFile(file, "utf8")) as MockRecording[]);
+      registerMockRecordings(JSON.parse(await readFile(/* turbopackIgnore: true */ file, "utf8")) as MockRecording[]);
     } catch {
       /* fixtures not present — fine */
     }
