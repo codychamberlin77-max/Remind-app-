@@ -2,8 +2,19 @@
 
 LIFEOS never logs into anyone's inbox. There are two ways email gets in:
 
-1. **Forwarding (new mail).** Each user gets a private address such as `k7m2p9x4q8rt@in.yourdomain.com`. They forward emails by hand, or set a Gmail filter or Outlook rule that forwards only receipts, orders, trials, renewals, credits and warranties. The `/email` page walks them through it. It also shows Gmail's forwarding confirmation code as soon as it arrives, so they never need access to the LIFEOS mailbox.
-2. **Google Takeout import (past mail).** The user exports Mail from takeout.google.com and uploads the `.zip` or `.mbox` on `/email`. The worker scans it once with a local relevance filter, with no AI and no network. It sends only likely receipts, orders, trials, bills, credits and warranties through the normal pipeline. The archive is deleted as soon as the scan ends.
+1. **Forwarding (new mail).** Each user gets a private address such as `k7m2p9x4q8rt@in.yourdomain.com`. It works with any provider. They forward emails by hand, or set a Gmail filter, Outlook rule or iCloud rule that forwards only receipts, orders, trials, renewals, credits and warranties. The `/email` page walks them through it. It also shows Gmail's forwarding confirmation code as soon as it arrives, so they never need access to the LIFEOS mailbox.
+2. **Past-email import.** The user exports their mail and uploads the file on `/email`. The page has step-by-step instructions for each app:
+
+   | Mail app | Export | File uploaded |
+   | --- | --- | --- |
+   | Gmail | Google Takeout → Mail | `.zip` (or `.mbox`) |
+   | Outlook.com / Hotmail | Settings → Privacy and data → Export mailbox | `.pst` |
+   | Outlook for Windows (classic) | File → Open & Export → Export to a file | `.pst` / `.ost` |
+   | Outlook for Mac | File → Export | `.olm` |
+   | Apple Mail | Mailbox → Export Mailbox, then Compress | `.zip` |
+   | Thunderbird | Mail file from the profile folder (no extension), or a zip of several | `INBOX` / `.zip` |
+
+   The file type is detected from its content (zip, PST, or mbox), not its name. The worker scans it once with a local relevance filter, with no AI and no network. It sends only likely receipts, orders, trials, bills, credits and warranties through the normal pipeline. The archive is deleted as soon as the scan ends.
 
 Direct Gmail/Outlook connections (OAuth) are deliberately left for later. Gmail's read scopes are "restricted" and need Google verification plus a yearly CASA security assessment.
 

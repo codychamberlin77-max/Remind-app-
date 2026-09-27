@@ -3,7 +3,9 @@ import { describe, expect, it } from "vitest";
 import { signInbound, verifyInbound } from "@/server/http/inboundSignature";
 import { domainOf, readHeaders } from "@/server/ingestion/emailHeaders";
 import { FORWARD_THRESHOLD, IMPORT_THRESHOLD, scoreEmail } from "@/server/ingestion/emailRelevance";
+import { olmToRaw } from "@/server/ingestion/mailArchive";
 import { splitMbox } from "@/server/ingestion/mbox";
+import { isAcceptedArchiveName } from "@/lib/mailArchiveNames";
 import { normalizeEmail, parseForwardedHeader } from "@/server/ingestion/normalize";
 import { tokenFromRecipient } from "@/server/services/inbound";
 
@@ -125,5 +127,26 @@ describe("mbox splitting", () => {
     expect(out[0]!.raw.toString()).not.toContain(">From");
     expect(out[1]!.oversized).toBe(true);
     expect(out[2]!.raw.toString()).toContain("From me, not a separator");
+  });
+});
+
+describe("mail export files", () => {
+  it("accepts exports from Gmail, Apple Mail, Thunderbird and Outlook", () => {
+    for (const f of ["takeout-2026.zip", "All mail.mbox", "mbox", "INBOX", "Sent", "backup.pst", "me@outlook.com.ost", "Outlook for Mac Archive.olm", "C:\\Users\\me\\Inbox"]) {
+      expect(isAcceptedArchiveName(f), f).toBe(true);
+    }
+    for (const f of ["photo.jpg", "Inbox.msf", "notes.txt", ".hidden", ""]) expect(isAcceptedArchiveName(f), f).toBe(false);
+  });
+
+  it("turns an .olm message into a normal email", () => {
+    const raw = olmToRaw(
+      '<emails><email><OPFMessageCopySubject>Caf&#233; order &amp; receipt</OPFMessageCopySubject><OPFMessageCopySenderAddress><emailAddress OPFContactEmailAddressAddress="a@shop.example" OPFContactEmailAddressName="Shop" /></OPFMessageCopySenderAddress><OPFMessageCopySentTime>2026-09-01T10:00:00</OPFMessageCopySentTime><OPFMessageCopyBody>Total $5</OPFMessageCopyBody></email></emails>',
+    )!;
+    const h = readHeaders(raw.toString("latin1"));
+    expect(h.subject).toBe("Café order & receipt");
+    expect(h.fromDomain).toBe("shop.example");
+    expect(h.date?.toISOString().slice(0, 10)).toBe("2026-09-01");
+    expect(raw.toString()).toContain("Total $5");
+    expect(olmToRaw("<categories/>")).toBeNull();
   });
 });

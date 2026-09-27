@@ -1,5 +1,5 @@
-import { createReadStream, createWriteStream } from "node:fs";
-import { open, rm } from "node:fs/promises";
+import { createWriteStream } from "node:fs";
+import { mkdtemp, rm } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { Readable, Transform } from "node:stream";
@@ -11,7 +11,7 @@ import { env } from "@/server/env";
 import { readHeaders } from "@/server/ingestion/emailHeaders";
 import { IMPORT_THRESHOLD, scoreEmail } from "@/server/ingestion/emailRelevance";
 import { ingest } from "@/server/ingestion/ingest";
-import { mboxStreamsFromZip, splitMbox } from "@/server/ingestion/mbox";
+import { isAcceptedArchiveName, messagesFromArchive } from "@/server/ingestion/mailArchive";
 import { enqueue } from "@/server/jobs/queue";
 import { QUEUES } from "@/server/jobs/queues";
 import { newObjectKey, objectStore } from "@/server/storage/objectStore";
@@ -26,10 +26,11 @@ import { InputError } from "./items";
  */
 
 const DAILY_IMPORTS = 5;
+const UNSUPPORTED = "Upload a mail export: .zip or .mbox (Gmail, Apple Mail, Thunderbird), .pst (Outlook), or .olm (Outlook for Mac).";
 
 export async function startImport(userId: string, input: { filename: string; body: ReadableStream<Uint8Array>; declaredBytes: number | null }) {
   const max = env().MAX_IMPORT_BYTES;
-  if (!/\.(mbox|zip)$/i.test(input.filename)) throw new InputError("Upload the .mbox or .zip file from Google Takeout.");
+  if (!isAcceptedArchiveName(input.filename)) throw new InputError(UNSUPPORTED);
   if (input.declaredBytes != null && input.declaredBytes > max) throw new InputError(`That file is larger than ${Math.round(max / 1024 / 1024)} MB.`);
 
   const recent = await withUser(userId, (tx) =>
@@ -97,17 +98,6 @@ export async function listImports(userId: string) {
   );
 }
 
-async function isZip(file: string) {
-  const fh = await open(file, "r");
-  try {
-    const buf = Buffer.alloc(4);
-    await fh.read(buf, 0, 4, 0);
-    return buf.equals(Buffer.from([0x50, 0x4b, 0x03, 0x04]));
-  } finally {
-    await fh.close();
-  }
-}
-
 /** Worker job. Safe to retry: already-imported messages are de-duplicated by ingest(). */
 export async function runImport(userId: string, importId: string, opts: { now?: Date; claimed?: boolean } = {}) {
   const [imp] = await withUser(userId, (tx) =>
@@ -139,52 +129,45 @@ export async function runImport(userId: string, importId: string, opts: { now?: 
         .where(and(eq(schema.emailImports.userId, userId), eq(schema.emailImports.id, importId))),
     );
 
-  const tmp = path.join(os.tmpdir(), `lifeos-import-${importId}`);
+  const tmpDir = await mkdtemp(path.join(os.tmpdir(), "lifeos-import-"));
+  const tmp = path.join(tmpDir, "archive");
   try {
     await pipeline(await objectStore().getStream(imp.storageKey), createWriteStream(tmp, { mode: 0o600 }));
-    const sources: AsyncIterable<Readable> = (await isZip(tmp))
-      ? mboxStreamsFromZip(tmp)
-      : (async function* () {
-          yield createReadStream(tmp);
-        })();
-
-    outer: for await (const stream of sources) {
-      for await (const msg of splitMbox(stream)) {
-        counts.scanned++;
-        if (counts.scanned % 250 === 0) await save();
-        if (msg.oversized) continue;
-        const h = readHeaders(msg.raw.subarray(0, 64 * 1024).toString("latin1"));
-        const rel = scoreEmail(h, msg.raw.subarray(0, 40_000).toString("latin1"));
-        if (rel.score < IMPORT_THRESHOLD) continue;
-        // Old mail rarely has open deadlines; warranties last longer.
-        const ageDays = h.date ? (now - h.date.getTime()) / 86_400_000 : 0;
-        if (ageDays > (rel.category === "warranty" ? 3 * 365 : 400)) continue;
-        counts.relevant++;
-        const subject = h.subject.slice(0, 100) || "Email";
-        const r = await ingest({ userId, plan: user?.plan, source: "email_import", bytes: msg.raw, filename: `${subject}.eml`, sourceRef: h.messageId ?? undefined });
-        if (r.status === "accepted") counts.imported++;
-        else if (r.status === "duplicate") counts.duplicates++;
-        else if (r.code === "limit_reached") {
-          counts.limitReached = true;
-          break outer;
-        }
-        if (counts.imported >= maxDocs) {
-          counts.limitReached = true;
-          break outer;
-        }
+    for await (const msg of messagesFromArchive(tmp, tmpDir)) {
+      counts.scanned++;
+      if (counts.scanned % 250 === 0) await save();
+      if (msg.oversized) continue;
+      const h = readHeaders(msg.raw.subarray(0, 64 * 1024).toString("latin1"));
+      const rel = scoreEmail(h, msg.raw.subarray(0, 40_000).toString("latin1"));
+      if (rel.score < IMPORT_THRESHOLD) continue;
+      // Old mail rarely has open deadlines; warranties last longer.
+      const ageDays = h.date ? (now - h.date.getTime()) / 86_400_000 : 0;
+      if (ageDays > (rel.category === "warranty" ? 3 * 365 : 400)) continue;
+      counts.relevant++;
+      const subject = h.subject.slice(0, 100) || "Email";
+      const r = await ingest({ userId, plan: user?.plan, source: "email_import", bytes: msg.raw, filename: `${subject}.eml`, sourceRef: h.messageId ?? undefined });
+      if (r.status === "accepted") counts.imported++;
+      else if (r.status === "duplicate") counts.duplicates++;
+      else if (r.code === "limit_reached") {
+        counts.limitReached = true;
+        break;
+      }
+      if (counts.imported >= maxDocs) {
+        counts.limitReached = true;
+        break;
       }
     }
     if (counts.scanned === 0) {
-      await save({ status: "failed", failureReason: "We couldn't find any emails in that file. Upload the .mbox (or .zip) from Google Takeout.", finishedAt: new Date() });
+      await save({ status: "failed", failureReason: "We couldn't find any emails in that file. Check it's a mail export (.zip, .mbox, .pst or .olm).", finishedAt: new Date() });
     } else {
       await save({ status: "done", finishedAt: new Date() });
     }
   } catch (e) {
     console.error("[import] failed", importId, (e as Error).message);
-    await save({ status: "failed", failureReason: "We couldn't read that file. Make sure it's the .mbox or .zip from Google Takeout.", finishedAt: new Date() });
+    await save({ status: "failed", failureReason: "We couldn't read that file. Check it's a mail export (.zip, .mbox, .pst or .olm) and try again.", finishedAt: new Date() });
   } finally {
     // Privacy: the archive (the user's whole mailbox) never outlives the scan.
-    await rm(tmp, { force: true }).catch(() => undefined);
+    await rm(tmpDir, { recursive: true, force: true }).catch(() => undefined);
     await objectStore().delete(imp.storageKey).catch(() => undefined);
     await withUser(userId, async (tx) => {
       await tx.update(schema.emailImports).set({ storageKey: null }).where(and(eq(schema.emailImports.userId, userId), eq(schema.emailImports.id, importId)));

@@ -13,7 +13,7 @@ test("email: forwarding address, Gmail guide, and a forwarded receipt shows up",
   const address = (await page.getByTestId("forwarding-address").textContent())!.trim();
   expect(address).toMatch(/^[a-z2-9]{12}@in\.lifeos\.test$/);
   await expect(page.getByTestId("gmail-filter")).toContainText('"free trial"');
-  await expect(page.getByRole("button", { name: "Upload Takeout file" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Upload mail export" })).toBeVisible();
 
   // Simulate the Cloudflare Email Worker delivering a Gmail confirmation, then a receipt.
   const deliver = async (raw: string) => {

@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { Readable } from "node:stream";
 import { crc32 } from "node:zlib";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -139,32 +140,53 @@ function mbox(messages: Buffer[]) {
 }
 
 /** Minimal store-only zip (enough for yauzl) so the test has no extra dependency. */
-function zipOf(name: string, data: Buffer) {
-  const n = Buffer.from(name);
-  const crc = crc32(data);
-  const local = Buffer.alloc(30);
-  local.writeUInt32LE(0x04034b50, 0);
-  local.writeUInt16LE(20, 4);
-  local.writeUInt32LE(crc, 14);
-  local.writeUInt32LE(data.length, 18);
-  local.writeUInt32LE(data.length, 22);
-  local.writeUInt16LE(n.length, 26);
-  const central = Buffer.alloc(46);
-  central.writeUInt32LE(0x02014b50, 0);
-  central.writeUInt16LE(20, 4);
-  central.writeUInt16LE(20, 6);
-  central.writeUInt32LE(crc, 16);
-  central.writeUInt32LE(data.length, 20);
-  central.writeUInt32LE(data.length, 24);
-  central.writeUInt16LE(n.length, 28);
-  const cdOffset = local.length + n.length + data.length;
+function zipOf(files: Record<string, Buffer>) {
+  const locals: Buffer[] = [];
+  const centrals: Buffer[] = [];
+  let offset = 0;
+  for (const [name, data] of Object.entries(files)) {
+    const n = Buffer.from(name);
+    const crc = crc32(data);
+    const local = Buffer.alloc(30);
+    local.writeUInt32LE(0x04034b50, 0);
+    local.writeUInt16LE(20, 4);
+    local.writeUInt32LE(crc, 14);
+    local.writeUInt32LE(data.length, 18);
+    local.writeUInt32LE(data.length, 22);
+    local.writeUInt16LE(n.length, 26);
+    const central = Buffer.alloc(46);
+    central.writeUInt32LE(0x02014b50, 0);
+    central.writeUInt16LE(20, 4);
+    central.writeUInt16LE(20, 6);
+    central.writeUInt32LE(crc, 16);
+    central.writeUInt32LE(data.length, 20);
+    central.writeUInt32LE(data.length, 24);
+    central.writeUInt16LE(n.length, 28);
+    central.writeUInt32LE(offset, 42);
+    locals.push(local, n, data);
+    centrals.push(central, n);
+    offset += local.length + n.length + data.length;
+  }
+  const cd = Buffer.concat(centrals);
   const end = Buffer.alloc(22);
   end.writeUInt32LE(0x06054b50, 0);
-  end.writeUInt16LE(1, 8);
-  end.writeUInt16LE(1, 10);
-  end.writeUInt32LE(central.length + n.length, 12);
-  end.writeUInt32LE(cdOffset, 16);
-  return Buffer.concat([local, n, data, central, n, end]);
+  end.writeUInt16LE(Object.keys(files).length, 8);
+  end.writeUInt16LE(Object.keys(files).length, 10);
+  end.writeUInt32LE(cd.length, 12);
+  end.writeUInt32LE(offset, 16);
+  return Buffer.concat([...locals, cd, end]);
+}
+
+function olmMessage(subject: string, daysAgo: number) {
+  const sent = new Date(Date.now() - daysAgo * 86_400_000).toISOString();
+  return Buffer.from(`<?xml version="1.0" encoding="UTF-8"?>
+<emails><email>
+  <OPFMessageCopySubject>${subject}</OPFMessageCopySubject>
+  <OPFMessageCopySenderAddress><emailAddress OPFContactEmailAddressAddress="BestBuyInfo@emailinfo.bestbuy.com" OPFContactEmailAddressName="Best Buy" /></OPFMessageCopySenderAddress>
+  <OPFMessageCopySentTime>${sent}</OPFMessageCopySentTime>
+  <OPFMessageCopyMessageID>&lt;olm-${subject.length}@bestbuy.com&gt;</OPFMessageCopyMessageID>
+  <OPFMessageCopyHTMLBody>&lt;html&gt;&lt;body&gt;&lt;p&gt;Thanks for your order.&lt;/p&gt;&lt;p&gt;Order total: $1,299.99&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</OPFMessageCopyHTMLBody>
+</email></emails>`);
 }
 
 const webStream = (buf: Buffer) => Readable.toWeb(Readable.from([buf])) as unknown as ReadableStream<Uint8Array>;
@@ -205,11 +227,55 @@ describe("Google Takeout import", () => {
 
   it("reads the .zip Takeout produces", async () => {
     const u = await createUser();
-    const file = zipOf("Takeout/Mail/All mail Including Spam and Trash.mbox", mbox(messages()));
+    const file = zipOf({ "Takeout/archive_browser.html": Buffer.from("<html></html>"), "Takeout/Mail/All mail Including Spam and Trash.mbox": mbox(messages()) });
     await startImport(u.id, { filename: "takeout-20260927.zip", body: webStream(file), declaredBytes: file.length });
     const imp = await waitDone(u.id);
     expect(imp.status).toBe("done");
     expect(imp.scanned).toBe(5);
+  });
+
+  it("reads an Apple Mail export (zipped Inbox.mbox folder)", async () => {
+    const u = await createUser();
+    const file = zipOf({ "Inbox.mbox/mbox": mbox(messages()), "Inbox.mbox/table_of_contents": Buffer.from([0, 1, 2, 3]), "__MACOSX/Inbox.mbox/._mbox": Buffer.from("junk") });
+    await startImport(u.id, { filename: "Inbox.mbox.zip", body: webStream(file), declaredBytes: file.length });
+    const imp = await waitDone(u.id);
+    expect(imp.status).toBe("done");
+    expect(imp.scanned).toBe(5);
+    expect(imp.imported + imp.duplicates).toBe(2);
+  });
+
+  it("reads a Thunderbird mail file (no extension)", async () => {
+    const u = await createUser();
+    const file = mbox(messages()).toString("latin1").replace(/^From \S+ /gm, "From - ");
+    await startImport(u.id, { filename: "INBOX", body: webStream(Buffer.from(file, "latin1")), declaredBytes: file.length });
+    const imp = await waitDone(u.id);
+    expect(imp.status).toBe("done");
+    expect(imp.scanned).toBe(5);
+  });
+
+  it("reads an Outlook .pst", async () => {
+    const u = await createUser();
+    // Real Outlook file shipped with pst-extractor (2001-era Enron mail).
+    const file = readFileSync("node_modules/pst-extractor/example/testdata/enron.pst");
+    await startImport(u.id, { filename: "backup.pst", body: webStream(file), declaredBytes: file.length });
+    const imp = await waitDone(u.id);
+    expect(imp.status).toBe("done");
+    expect(imp.scanned).toBe(71);
+    expect(imp.imported).toBe(0); // all far too old to have open deadlines
+  });
+
+  it("reads an Outlook for Mac .olm", async () => {
+    const u = await createUser();
+    const file = zipOf({
+      "Accounts/me@outlook.com/com.microsoft.__Messages/Inbox/message_00001.xml": olmMessage("Your Best Buy order #BBY01-9001", 5),
+      "Accounts/me@outlook.com/com.microsoft.__Messages/Inbox/message_00002.xml": olmMessage("Your Best Buy order #BBY01-9002 has shipped", 8),
+      "Accounts/me@outlook.com/Categories.xml": Buffer.from("<categories/>"),
+    });
+    await startImport(u.id, { filename: "Outlook for Mac Archive.olm", body: webStream(file), declaredBytes: file.length });
+    const imp = await waitDone(u.id);
+    expect(imp.status).toBe("done");
+    expect(imp.scanned).toBe(2);
+    expect(imp.imported).toBe(2);
   });
 
   it("rejects the wrong file type, reports a file with no email, and allows one import at a time", async () => {

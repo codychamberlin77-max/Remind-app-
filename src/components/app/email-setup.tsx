@@ -6,6 +6,7 @@ import { regenerateForwardingAddressAction } from "@/app/(app)/actions";
 import { Button } from "@/components/ui/button";
 import { Card, SectionTitle } from "@/components/ui/card";
 import { cn } from "@/lib/cn";
+import { isAcceptedArchiveName } from "@/lib/mailArchiveNames";
 
 type Activity = {
   id: string;
@@ -62,12 +63,87 @@ function CopyButton({ text, label = "Copy" }: { text: string; label?: string }) 
   );
 }
 
+type ForwardTab = "gmail" | "outlook" | "icloud" | "other";
+type ImportTab = "gmail" | "outlook" | "apple" | "thunderbird";
+const FORWARD_TABS: [ForwardTab, string][] = [["gmail", "Gmail"], ["outlook", "Outlook"], ["icloud", "iCloud"], ["other", "Other / by hand"]];
+const IMPORT_TABS: [ImportTab, string][] = [["gmail", "Gmail"], ["outlook", "Outlook"], ["apple", "Apple Mail"], ["thunderbird", "Thunderbird"]];
+const ICLOUD_WORDS = ["receipt", "order", "invoice", "trial", "renewal", "subscription", "credit", "warranty", "refund"];
+
+function Tabs<T extends string>({ tabs, value, onChange }: { tabs: [T, string][]; value: T; onChange: (t: T) => void }) {
+  return (
+    <div className="flex flex-wrap gap-1 p-1 bg-hover rounded-[10px] w-fit text-[13px]" role="tablist">
+      {tabs.map(([t, label]) => (
+        <button key={t} role="tab" aria-selected={value === t} onClick={() => onChange(t)} className={cn("px-3 h-7 rounded-[8px]", value === t ? "bg-surface shadow-sm font-medium" : "text-muted")}>
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+const ext = { className: "underline", target: "_blank", rel: "noreferrer noopener" } as const;
+
+function ImportSteps({ tab }: { tab: ImportTab }) {
+  const cls = "space-y-2 text-[14px] list-decimal pl-5 marker:text-subtle";
+  if (tab === "gmail")
+    return (
+      <ol className={cls}>
+        <li>Open <a {...ext} href="https://takeout.google.com/">Google Takeout</a>, click <b>Deselect all</b>, then tick only <b>Mail</b>.</li>
+        <li>Optional: under <b>All Mail data included</b>, choose just <b>Inbox</b> or a label like <b>Purchases</b> to keep the file small.</li>
+        <li>Create the export. Google emails you a link, usually within an hour. Download the <b>.zip</b> and upload it here.</li>
+      </ol>
+    );
+  if (tab === "outlook")
+    return (
+      <div className="space-y-3 text-[14px]">
+        <div>
+          <p className="font-medium">Outlook.com / Hotmail / Live</p>
+          <ol className={cls}>
+            <li>On a computer, open <a {...ext} href="https://outlook.live.com/mail/0/options/general/privacy">Outlook settings → General → Privacy and data</a>.</li>
+            <li>Under <b>Export mailbox</b>, click <b>Export</b>. Microsoft prepares a <b>.pst</b> file (this can take a few days) and shows a download link on that page.</li>
+            <li>Download it and upload it here.</li>
+          </ol>
+        </div>
+        <div>
+          <p className="font-medium">Outlook for Windows (classic)</p>
+          <ol className={cls}>
+            <li><b>File</b> → <b>Open &amp; Export</b> → <b>Import/Export</b> → <b>Export to a file</b> → <b>Outlook Data File (.pst)</b>.</li>
+            <li>Pick <b>Inbox</b>, tick <b>Include subfolders</b>, finish, and upload the .pst here.</li>
+          </ol>
+        </div>
+        <div>
+          <p className="font-medium">Outlook for Mac</p>
+          <ol className={cls}>
+            <li><b>File</b> → <b>Export</b> (older versions: <b>Tools</b> → <b>Export</b>), choose <b>Mail</b>, and save.</li>
+            <li>Upload the <b>.olm</b> file here.</li>
+          </ol>
+        </div>
+      </div>
+    );
+  if (tab === "apple")
+    return (
+      <ol className={cls}>
+        <li>In Mail on your Mac, select <b>Inbox</b> (or another mailbox) in the sidebar.</li>
+        <li>Choose <b>Mailbox</b> → <b>Export Mailbox…</b> and save it, for example to your Desktop.</li>
+        <li>Right-click the exported <b>Inbox.mbox</b> → <b>Compress</b>, then upload the <b>.zip</b> here.</li>
+      </ol>
+    );
+  return (
+    <ol className={cls}>
+      <li>In Thunderbird, open <b>Help</b> → <b>Troubleshooting Information</b> → <b>Profile Folder</b> → <b>Open Folder</b>.</li>
+      <li>Go into <b>ImapMail</b> (or <b>Mail</b>), then your account&apos;s folder.</li>
+      <li>Upload the file named <b>INBOX</b> or <b>Inbox</b>, the one <em>without</em> “.msf”. To send several folders, zip them first.</li>
+    </ol>
+  );
+}
+
 const fmt = (d: string) => new Date(d).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 
 export function EmailSetup({ initialStatus, initialImports }: { initialStatus: Status; initialImports: Import[] }) {
   const [status, setStatus] = useState(initialStatus);
   const [imports, setImports] = useState(initialImports);
-  const [tab, setTab] = useState<"gmail" | "outlook" | "other">("gmail");
+  const [tab, setTab] = useState<ForwardTab>("gmail");
+  const [importTab, setImportTab] = useState<ImportTab>("gmail");
   const [pending, startTransition] = useTransition();
   const [notice, setNotice] = useState<string | null>(null);
   const [upload, setUpload] = useState<{ pct: number; name: string } | null>(null);
@@ -99,8 +175,8 @@ export function EmailSetup({ initialStatus, initialImports }: { initialStatus: S
 
   function uploadMailbox(file: File) {
     setUploadError(null);
-    if (!/\.(mbox|zip)$/i.test(file.name)) {
-      setUploadError("Choose the .mbox or .zip file from Google Takeout.");
+    if (!isAcceptedArchiveName(file.name)) {
+      setUploadError("Choose a mail export: .zip, .mbox, .pst, or .olm.");
       return;
     }
     const xhr = new XMLHttpRequest();
@@ -135,19 +211,12 @@ export function EmailSetup({ initialStatus, initialImports }: { initialStatus: S
       <section>
         <SectionTitle>Bring in past emails</SectionTitle>
         <Card className="p-5 space-y-4">
-          <p className="text-[14px]">Find old receipts, subscriptions, and credits you&apos;ve forgotten about, using a one-time export from Google.</p>
-          <ol className="space-y-2 text-[14px] list-decimal pl-5 marker:text-subtle">
-            <li>
-              Open{" "}
-              <a className="underline" href="https://takeout.google.com/" target="_blank" rel="noreferrer noopener">Google Takeout</a>, click <b>Deselect all</b>, then tick only <b>Mail</b>.
-            </li>
-            <li>Optional: under <b>All Mail data included</b>, choose just <b>Inbox</b> or a label like <b>Purchases</b> to keep the file small.</li>
-            <li>Create the export. Google emails you a link (usually within an hour). Download the .zip and upload it here.</li>
-          </ol>
+          <p className="text-[14px]">Find old receipts, subscriptions, and credits you&apos;ve forgotten about, using a one-time export from your mail app.</p>
+          <Tabs tabs={IMPORT_TABS} value={importTab} onChange={setImportTab} />
+          <ImportSteps tab={importTab} />
           <input
             ref={fileInput}
             type="file"
-            accept=".mbox,.zip,application/zip,application/mbox"
             className="hidden"
             onChange={(e) => {
               const f = e.target.files?.[0];
@@ -162,7 +231,7 @@ export function EmailSetup({ initialStatus, initialImports }: { initialStatus: S
             </div>
           ) : (
             <Button onClick={() => fileInput.current?.click()} disabled={importActive} variant="secondary">
-              <Upload className="size-4" /> Upload Takeout file
+              <Upload className="size-4" /> Upload mail export
             </Button>
           )}
           {uploadError ? <p className="text-[13.5px] text-urgent">{uploadError}</p> : null}
@@ -267,13 +336,7 @@ export function EmailSetup({ initialStatus, initialImports }: { initialStatus: S
       <section>
         <SectionTitle>Forward new emails automatically</SectionTitle>
         <Card className="p-5 space-y-4">
-          <div className="flex gap-1 p-1 bg-hover rounded-[10px] w-fit text-[13px]">
-            {(["gmail", "outlook", "other"] as const).map((t) => (
-              <button key={t} onClick={() => setTab(t)} className={cn("px-3 h-7 rounded-[8px] capitalize", tab === t ? "bg-surface shadow-sm font-medium" : "text-muted")}>
-                {t === "other" ? "Other / by hand" : t === "gmail" ? "Gmail" : "Outlook"}
-              </button>
-            ))}
-          </div>
+          <Tabs tabs={FORWARD_TABS} value={tab} onChange={setTab} />
 
           {tab === "gmail" ? (
             <ol className="space-y-3 text-[14px] list-decimal pl-5 marker:text-subtle">
@@ -298,6 +361,16 @@ export function EmailSetup({ initialStatus, initialImports }: { initialStatus: S
               <li>Condition: <b>Subject includes</b> — add: receipt, order confirmation, your order, invoice, free trial, renewal, subscription, travel credit, warranty, refund.</li>
               <li>Action: <b>Forward to</b> → paste your LIFEOS address. Save.</li>
               <li className="text-muted">Some work or school accounts block forwarding to outside addresses. If so, forward emails by hand.</li>
+            </ol>
+          ) : tab === "icloud" ? (
+            <ol className="space-y-3 text-[14px] list-decimal pl-5 marker:text-subtle">
+              <li>On a computer, open <a {...ext} href="https://www.icloud.com/mail/">iCloud Mail</a> → the <b>gear</b> icon → <b>Settings</b> → <b>Rules</b> → <b>Add a Rule</b>.</li>
+              <li>Choose <b>If a message: subject contains</b> and type a word like <b>receipt</b>. Then <b>Forward to</b> → paste your LIFEOS address. Save.</li>
+              <li>
+                iCloud allows one word per rule, so add a rule for each word you care about:{" "}
+                <span className="text-muted">{ICLOUD_WORDS.join(", ")}</span>.
+              </li>
+              <li className="text-muted">Tip: “order” and “receipt” catch most purchases. Rules work on mail sent to your @icloud.com, @me.com, and @mac.com addresses.</li>
             </ol>
           ) : (
             <p className="text-[14px]">
