@@ -78,11 +78,11 @@ export function EmailSetup({ initialStatus, initialImports }: { initialStatus: S
 
   // Poll: forwarding status (verification code, new mail) and import progress.
   useEffect(() => {
-    if (!status.enabled) return;
+    if (!status.enabled && !importActive) return;
     let stop = false;
     const tick = async () => {
       try {
-        const [s, i] = await Promise.all([fetch("/api/email/status").then((r) => r.json()), fetch("/api/imports").then((r) => r.json())]);
+        const [s, i] = await Promise.all([status.enabled ? fetch("/api/email/status").then((r) => r.json()) : null, fetch("/api/imports").then((r) => r.json())]);
         if (stop) return;
         if (s?.address !== undefined) setStatus(s);
         if (Array.isArray(i?.imports)) setImports(i.imports);
@@ -131,6 +131,71 @@ export function EmailSetup({ initialStatus, initialImports }: { initialStatus: S
     xhr.send(file);
   }
 
+  const importSection = (
+      <section>
+        <SectionTitle>Bring in past emails</SectionTitle>
+        <Card className="p-5 space-y-4">
+          <p className="text-[14px]">Find old receipts, subscriptions, and credits you&apos;ve forgotten about, using a one-time export from Google.</p>
+          <ol className="space-y-2 text-[14px] list-decimal pl-5 marker:text-subtle">
+            <li>
+              Open{" "}
+              <a className="underline" href="https://takeout.google.com/" target="_blank" rel="noreferrer noopener">Google Takeout</a>, click <b>Deselect all</b>, then tick only <b>Mail</b>.
+            </li>
+            <li>Optional: under <b>All Mail data included</b>, choose just <b>Inbox</b> or a label like <b>Purchases</b> to keep the file small.</li>
+            <li>Create the export. Google emails you a link (usually within an hour). Download the .zip and upload it here.</li>
+          </ol>
+          <input
+            ref={fileInput}
+            type="file"
+            accept=".mbox,.zip,application/zip,application/mbox"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) uploadMailbox(f);
+              e.target.value = "";
+            }}
+          />
+          {upload ? (
+            <div className="space-y-2">
+              <p className="text-[13.5px] text-muted">Uploading {upload.name}… {upload.pct}%</p>
+              <div className="h-1.5 rounded-full bg-hover overflow-hidden"><div className="h-full bg-ink transition-all" style={{ width: `${upload.pct}%` }} /></div>
+            </div>
+          ) : (
+            <Button onClick={() => fileInput.current?.click()} disabled={importActive} variant="secondary">
+              <Upload className="size-4" /> Upload Takeout file
+            </Button>
+          )}
+          {uploadError ? <p className="text-[13.5px] text-urgent">{uploadError}</p> : null}
+
+          {imports.length ? (
+            <div className="divide-y divide-line border-t border-line pt-1" data-testid="imports">
+              {imports.map((i) => (
+                <div key={i.id} className="py-3 text-[13.5px]">
+                  <div className="flex items-center gap-2">
+                    {i.status === "queued" || i.status === "scanning" ? <Loader2 className="size-3.5 animate-spin" /> : i.status === "done" ? <Check className="size-3.5" /> : <CircleAlert className="size-3.5 text-urgent" />}
+                    <span className="font-medium truncate">{i.filename}</span>
+                  </div>
+                  <p className="text-muted mt-1 pl-5">
+                    {i.status === "queued" ? "Waiting to start…" : null}
+                    {i.status === "scanning" ? `Scanning… ${i.scanned.toLocaleString()} emails checked, ${i.imported} added so far.` : null}
+                    {i.status === "done"
+                      ? `Checked ${i.scanned.toLocaleString()} emails · ${i.relevant} looked important · ${i.imported} added${i.duplicates ? ` · ${i.duplicates} already here` : ""}.`
+                      : null}
+                    {i.status === "failed" ? i.failureReason ?? "That import failed." : null}
+                  </p>
+                  {i.limitReached ? <p className="text-subtle pl-5 mt-0.5">Stopped at your document limit. The most important remaining emails can be forwarded by hand.</p> : null}
+                  {i.status === "done" && i.imported ? (
+                    <Link href="/home" className="pl-5 text-[13px] underline">See what we found</Link>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          ) : null}
+          <p className="text-[12.5px] text-subtle">Your export is scanned once and deleted right after. Only emails that look like receipts, orders, trials, bills, credits, or warranties are kept.</p>
+        </Card>
+      </section>
+  );
+
   if (!status.enabled) {
     return (
       <div className="space-y-6">
@@ -139,9 +204,10 @@ export function EmailSetup({ initialStatus, initialImports }: { initialStatus: S
           <CircleAlert className="size-5 text-muted shrink-0 mt-0.5" />
           <div className="text-[14px] text-muted">
             <p className="text-ink font-medium">Email forwarding isn&apos;t set up on this server yet.</p>
-            <p className="mt-1">Until then, you can still <Link className="underline" href="/add">upload</Link> screenshots, PDFs, or saved .eml emails.</p>
+            <p className="mt-1">Until then, you can import past email below, or <Link className="underline" href="/add">upload</Link> screenshots, PDFs, or saved .eml emails.</p>
           </div>
         </Card>
+        {importSection}
       </div>
     );
   }
@@ -244,68 +310,7 @@ export function EmailSetup({ initialStatus, initialImports }: { initialStatus: S
         </Card>
       </section>
 
-      <section>
-        <SectionTitle>Bring in past emails</SectionTitle>
-        <Card className="p-5 space-y-4">
-          <p className="text-[14px]">Find old receipts, subscriptions, and credits you&apos;ve forgotten about, using a one-time export from Google.</p>
-          <ol className="space-y-2 text-[14px] list-decimal pl-5 marker:text-subtle">
-            <li>
-              Open{" "}
-              <a className="underline" href="https://takeout.google.com/" target="_blank" rel="noreferrer noopener">Google Takeout</a>, click <b>Deselect all</b>, then tick only <b>Mail</b>.
-            </li>
-            <li>Optional: under <b>All Mail data included</b>, choose just <b>Inbox</b> or a label like <b>Purchases</b> to keep the file small.</li>
-            <li>Create the export. Google emails you a link (usually within an hour). Download the .zip and upload it here.</li>
-          </ol>
-          <input
-            ref={fileInput}
-            type="file"
-            accept=".mbox,.zip,application/zip,application/mbox"
-            className="hidden"
-            onChange={(e) => {
-              const f = e.target.files?.[0];
-              if (f) uploadMailbox(f);
-              e.target.value = "";
-            }}
-          />
-          {upload ? (
-            <div className="space-y-2">
-              <p className="text-[13.5px] text-muted">Uploading {upload.name}… {upload.pct}%</p>
-              <div className="h-1.5 rounded-full bg-hover overflow-hidden"><div className="h-full bg-ink transition-all" style={{ width: `${upload.pct}%` }} /></div>
-            </div>
-          ) : (
-            <Button onClick={() => fileInput.current?.click()} disabled={importActive} variant="secondary">
-              <Upload className="size-4" /> Upload Takeout file
-            </Button>
-          )}
-          {uploadError ? <p className="text-[13.5px] text-urgent">{uploadError}</p> : null}
-
-          {imports.length ? (
-            <div className="divide-y divide-line border-t border-line pt-1" data-testid="imports">
-              {imports.map((i) => (
-                <div key={i.id} className="py-3 text-[13.5px]">
-                  <div className="flex items-center gap-2">
-                    {i.status === "queued" || i.status === "scanning" ? <Loader2 className="size-3.5 animate-spin" /> : i.status === "done" ? <Check className="size-3.5" /> : <CircleAlert className="size-3.5 text-urgent" />}
-                    <span className="font-medium truncate">{i.filename}</span>
-                  </div>
-                  <p className="text-muted mt-1 pl-5">
-                    {i.status === "queued" ? "Waiting to start…" : null}
-                    {i.status === "scanning" ? `Scanning… ${i.scanned.toLocaleString()} emails checked, ${i.imported} added so far.` : null}
-                    {i.status === "done"
-                      ? `Checked ${i.scanned.toLocaleString()} emails · ${i.relevant} looked important · ${i.imported} added${i.duplicates ? ` · ${i.duplicates} already here` : ""}.`
-                      : null}
-                    {i.status === "failed" ? i.failureReason ?? "That import failed." : null}
-                  </p>
-                  {i.limitReached ? <p className="text-subtle pl-5 mt-0.5">Stopped at your document limit. The most important remaining emails can be forwarded by hand.</p> : null}
-                  {i.status === "done" && i.imported ? (
-                    <Link href="/home" className="pl-5 text-[13px] underline">See what we found</Link>
-                  ) : null}
-                </div>
-              ))}
-            </div>
-          ) : null}
-          <p className="text-[12.5px] text-subtle">Your export is scanned once and deleted right after. Only emails that look like receipts, orders, trials, bills, credits, or warranties are kept.</p>
-        </Card>
-      </section>
+      {importSection}
 
       <section>
         <SectionTitle count={status.activity.length}>Recent forwarded email</SectionTitle>
