@@ -4,7 +4,8 @@
  *   - delivers due reminders (every minute)
  *   - refreshes priorities / expiries (daily)
  *   - purges deleted users' objects
- *   - scans Google Takeout mail imports
+ *   - scans past-email imports
+ *   - looks up store return policies / manufacturer warranties on the web
  */
 import { PgBoss } from "pg-boss";
 import { closeDb } from "@/server/db/client";
@@ -30,6 +31,9 @@ async function main() {
     for (const j of jobs) await handlers[QUEUES.deleteObject](j.data as never);
   });
 
+  await boss.work(QUEUES.lookupPolicy, { batchSize: 2 }, async (jobs) => {
+    for (const j of jobs) await handlers[QUEUES.lookupPolicy](j.data as never);
+  });
   await boss.work(QUEUES.importMailbox, async (jobs) => {
     for (const j of jobs) await handlers[QUEUES.importMailbox](j.data as never);
   });

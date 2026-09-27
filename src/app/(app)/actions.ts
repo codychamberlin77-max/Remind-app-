@@ -142,3 +142,29 @@ export async function regenerateForwardingAddressAction() {
     return "New address created. Update your forwarding rule to use it.";
   }, ["/email"]);
 }
+
+export async function addManualPurchaseAction(input: { item: string; store: string; purchaseDate: string | null; dateCertainty: "exact" | "approx" | "unknown"; price: string }) {
+  const p = z
+    .object({
+      item: z.string().max(200),
+      store: z.string().max(120),
+      purchaseDate: z.string().nullable(),
+      dateCertainty: z.enum(["exact", "approx", "unknown"]),
+      price: z.string().max(20),
+    })
+    .parse(input);
+  const priceText = p.price.replace(/[$,\s]/g, "");
+  if (priceText && !/^\d+(\.\d{1,2})?$/.test(priceText)) return { ok: false as const, error: "Enter the price like 129.99, or leave it blank." };
+  let itemId = "";
+  const r = await run(async (userId) => {
+    const { createManualPurchase } = await import("@/server/services/manual");
+    itemId = await createManualPurchase(userId, {
+      item: p.item,
+      store: p.store,
+      purchaseDate: p.purchaseDate || null,
+      dateCertainty: p.dateCertainty,
+      priceCents: priceText ? Math.round(Number(priceText) * 100) : null,
+    });
+  }, ["/home"]);
+  return r.ok ? { ok: true as const, itemId } : r;
+}

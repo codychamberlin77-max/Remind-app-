@@ -6,9 +6,11 @@ export const QUEUES = {
   purgeUserObjects: "purge-user-objects",
   deleteObject: "delete-object",
   importMailbox: "import-mailbox",
+  lookupPolicy: "lookup-policy",
 } as const;
 
 export type ProcessDocumentJob = { userId: string; documentId: string };
 export type PurgeUserObjectsJob = { userId: string };
 export type DeleteObjectJob = { userId: string; storageKey: string };
 export type ImportMailboxJob = { userId: string; importId: string };
+export type LookupPolicyJob = { userId: string; itemId: string };

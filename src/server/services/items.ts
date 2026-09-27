@@ -293,10 +293,10 @@ export async function editFact(userId: string, itemId: string, key: string, edit
       for (const dep of facts) {
         if (dep.userEditedAt || !dep.valueNumber) continue;
         if (dep.key === "return_deadline" && ["computed_from_document", "merchant_policy"].includes(dep.basis)) {
-          await tx.update(schema.itemFacts).set({ valueDate: addDays(edit.valueDate!, dep.valueNumber), explanation: recomputedExplanation(dep, edit.valueDate!) }).where(eq(schema.itemFacts.id, dep.id));
+          await tx.update(schema.itemFacts).set({ valueDate: addDays(edit.valueDate!, dep.valueNumber), certainty: dep.certainty === "unknown" ? "estimated" : dep.certainty, confidence: Math.max(dep.confidence, 0.55), explanation: recomputedExplanation(dep, edit.valueDate!) }).where(eq(schema.itemFacts.id, dep.id));
         }
         if ((dep.key === "warranty" || dep.key === "warranty_end") && ["computed_from_document", "manufacturer_default"].includes(dep.basis)) {
-          await tx.update(schema.itemFacts).set({ valueDate: addMonths(edit.valueDate!, dep.valueNumber), explanation: recomputedExplanation(dep, edit.valueDate!) }).where(eq(schema.itemFacts.id, dep.id));
+          await tx.update(schema.itemFacts).set({ valueDate: addMonths(edit.valueDate!, dep.valueNumber), certainty: dep.certainty === "unknown" ? "estimated" : dep.certainty, confidence: Math.max(dep.confidence, 0.5), explanation: recomputedExplanation(dep, edit.valueDate!) }).where(eq(schema.itemFacts.id, dep.id));
         }
       }
     }
@@ -322,7 +322,7 @@ const FACT_LABELS: Record<string, string> = {
 function recomputedExplanation(dep: typeof schema.itemFacts.$inferSelect, start: string) {
   if (dep.key === "return_deadline") {
     return dep.basis === "merchant_policy"
-      ? `${dep.valueNumber} days from ${formatDate(start)}, based on the store's typical policy.`
+      ? `${dep.valueNumber} days from ${formatDate(start)}, based on the store's ${dep.sourceUrl ? "return policy page" : "typical policy"}.`
       : `${dep.valueNumber} days from ${formatDate(start)}, as stated on your receipt.`;
   }
   return `${durationText(dep.valueNumber!)} from ${formatDate(start)}.`;

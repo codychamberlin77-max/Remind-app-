@@ -234,7 +234,15 @@ export function UploadFlow({ welcome }: { welcome: boolean }) {
         ))}
       </div>
 
-      <Link href="/email" className="mt-6 flex items-center justify-between gap-3 p-5 rounded-[22px] bg-grape text-white press">
+      <Link href="/add/manual" className="mt-6 flex items-center justify-between gap-3 p-5 rounded-[22px] bg-tile press">
+        <span>
+          <span className="block font-display text-[18px] font-semibold tracking-[-0.02em]">Lost the receipt?</span>
+          <span className="block text-[13.5px] text-muted mt-0.5">Type the item and store. We&apos;ll find the return window and warranty.</span>
+        </span>
+        <span className="grid place-items-center size-10 rounded-full bg-ink text-white shrink-0"><ArrowRight className="size-4" /></span>
+      </Link>
+
+      <Link href="/email" className="mt-3 flex items-center justify-between gap-3 p-5 rounded-[22px] bg-grape text-white press">
         <span>
           <span className="block font-display text-[18px] font-semibold tracking-[-0.02em]">Most of this is in your email</span>
           <span className="block text-[13.5px] text-white/75 mt-0.5">Forward receipts and trials automatically, or import past email.</span>

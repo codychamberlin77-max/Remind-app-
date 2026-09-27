@@ -1,12 +1,13 @@
 import type { z } from "zod";
 import { env } from "@/server/env";
+import type { PolicyQuery, PolicyResearch } from "@/server/policies/types";
 
 export type ContentPart =
   | { type: "text"; text: string }
   | { type: "image"; mimeType: "image/jpeg" | "image/png" | "image/webp"; data: Buffer }
   | { type: "pdf"; data: Buffer };
 
-export type AITask = "classify" | "transcribe" | "extract" | "parse_search";
+export type AITask = "classify" | "transcribe" | "extract" | "parse_search" | "policy";
 
 export type GenerateRequest<T> = {
   task: AITask;
@@ -49,6 +50,12 @@ export class AIProviderError extends Error {
 export interface AIProvider {
   readonly id: "anthropic" | "openai" | "mock";
   generate<T>(req: GenerateRequest<T>): Promise<GenerateResult<T>>;
+  /**
+   * Find and fetch the official public policy pages for a store or brand.
+   * Receives only the PolicyQuery (no user data). Returns the fetched page text
+   * so every extracted claim can be verified against it.
+   */
+  researchPolicy(q: PolicyQuery): Promise<PolicyResearch>;
 }
 
 const cache = new Map<string, AIProvider>();

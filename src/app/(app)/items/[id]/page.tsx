@@ -1,4 +1,4 @@
-import { ArrowLeft, CircleAlert, Copy, Eye, FileText, Quote } from "lucide-react";
+import { ArrowLeft, CircleAlert, Copy, ExternalLink, Eye, FileText, Quote, Receipt } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
@@ -10,18 +10,30 @@ import {
   NotDuplicateButton,
   RecordOutcome,
 } from "@/components/app/item-controls";
+import { PolicyPending } from "@/components/app/policy-pending";
 import { ReminderPicker } from "@/components/app/reminder-picker";
 import { Button } from "@/components/ui/button";
 import { Card, SectionTitle } from "@/components/ui/card";
 import { CertaintyBadge } from "@/components/ui/certainty";
 import { formatMoney } from "@/lib/money";
 import { requireUser } from "@/server/auth/session";
+import { durationText } from "@/server/derivation/derive";
 import { daysBetween, formatDate } from "@/server/extraction/dates";
+import type { PolicyLookupState } from "@/server/policies/apply";
+import { receiptRecoveryTip } from "@/server/policies/receiptTips";
 import { isUuid } from "@/server/http/handle";
 import { NotFoundError } from "@/server/services/documents";
 import { getItem } from "@/server/services/items";
 
 export const dynamic = "force-dynamic";
+
+function hostOf(url: string) {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "");
+  } catch {
+    return "the web";
+  }
+}
 
 const KIND_LABEL: Record<string, string> = {
   purchase: "Purchase",
@@ -45,9 +57,12 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
     throw e;
   }
   const { item, facts, actions, document, lineItems, today, duplicateOf, outcomes } = data;
+  const lookup = item.details.policyLookup as PolicyLookupState | undefined;
   const headlineFact = facts.find((f) => ["total", "amount", "purchase_price"].includes(f.key) && f.valueCents != null);
 
   function display(f: (typeof facts)[number]) {
+    if (f.certainty === "unknown" && f.valueNumber && f.key === "return_deadline") return `${f.valueNumber}-day policy · date unknown`;
+    if (f.certainty === "unknown" && f.valueNumber && f.key === "warranty") return `${durationText(f.valueNumber)} · date unknown`;
     if (f.certainty === "unknown") return "Unknown";
     if (f.valueCents != null) return formatMoney(f.valueCents, f.currency ?? item.currency ?? "USD");
     if (f.valueDate) {
@@ -84,6 +99,15 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
         <div className="mt-5"><ItemToolbar itemId={item.id} state={item.state} needsReview={item.needsReview} /></div>
       </header>
 
+      {lookup?.status === "pending" ? <PolicyPending merchant={lookup.merchant} brand={lookup.brand} /> : null}
+
+      {item.details.manual ? (
+        <Card className="p-4 flex gap-3 text-[14px] text-ink-2">
+          <Receipt className="size-4 mt-0.5 shrink-0 text-grape" />
+          <span><span className="font-semibold">No receipt? </span>{receiptRecoveryTip(item.merchant)}</span>
+        </Card>
+      ) : null}
+
       {item.possibleDuplicateOf || item.conflictNote || item.needsReview ? (
         <Card className="p-4 bg-estimated-bg/60 space-y-3">
           {item.possibleDuplicateOf ? (
@@ -116,8 +140,16 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
                 {f.evidence ? (
                   <p className="mt-2 text-[12.5px] text-subtle flex gap-1.5 items-start">
                     <Quote className="size-3 mt-0.5 shrink-0" />
-                    <span className="font-[family-name:var(--font-mono)] break-words">{f.evidence}</span>
+                    <span className="break-words">
+                      {f.sourceUrl ? <span className="font-medium text-muted">From {hostOf(f.sourceUrl)}: </span> : null}
+                      <span className="font-[family-name:var(--font-mono)]">{f.evidence}</span>
+                    </span>
                   </p>
+                ) : null}
+                {f.sourceUrl ? (
+                  <a href={f.sourceUrl} target="_blank" rel="noopener noreferrer nofollow" className="mt-1.5 inline-flex items-center gap-1 text-[12.5px] font-medium text-blue hover:underline">
+                    View the policy <ExternalLink className="size-3" />
+                  </a>
                 ) : null}
                 <div className="mt-2 -ml-2">
                   <FactButtons itemId={item.id} factKey={f.key} label={f.label} certainty={f.certainty} userConfirmed={!!f.userConfirmedAt} current={{ valueDate: f.valueDate, valueCents: f.valueCents, valueText: f.valueText }} />

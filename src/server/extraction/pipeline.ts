@@ -12,6 +12,9 @@ import {
   type DerivedItem,
 } from "@/server/derivation/derive";
 import { persistDerivedItems } from "@/server/derivation/persist";
+import { enqueue } from "@/server/jobs/queue";
+import { QUEUES } from "@/server/jobs/queues";
+import { needsPolicyLookup } from "@/server/policies/apply";
 import type { DocumentStage, DocumentStatus } from "@/server/domain/types";
 import { normalize, NormalizationError, type NormalizedDocument } from "@/server/ingestion/normalize";
 import type { AcceptedKind } from "@/server/ingestion/validateFile";
@@ -251,10 +254,22 @@ export async function processDocument(userId: string, documentId: string, opts: 
       return ids;
     });
 
+    await queuePolicyLookups(userId, itemIds);
     return { status, documentType: classification.document_type, itemIds, warnings, processingMs };
   } catch (e) {
     console.error("[pipeline] failed", documentId, (e as Error).message);
     return fail("failed", "Something went wrong while reading this document. You can try again.");
+  }
+}
+
+/** Purchases missing a return window or warranty get a background web policy lookup. */
+async function queuePolicyLookups(userId: string, itemIds: string[]) {
+  for (const itemId of itemIds) {
+    try {
+      if (await needsPolicyLookup(userId, itemId)) await enqueue(QUEUES.lookupPolicy, { userId, itemId });
+    } catch (e) {
+      console.error("[pipeline] policy lookup not queued", itemId, (e as Error).message);
+    }
   }
 }
 

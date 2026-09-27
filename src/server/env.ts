@@ -69,6 +69,13 @@ const schema = z.object({
   INBOUND_EMAIL_SECRET: z.string().optional(),
   // Past-email import (Google Takeout .mbox / .zip).
   MAX_IMPORT_BYTES: z.coerce.number().int().positive().default(1024 * 1024 * 1024),
+  // Web lookups of store return policies / manufacturer warranties (shared cache, see src/server/policies).
+  POLICY_LOOKUP_ENABLED: z
+    .enum(["true", "false"])
+    .default("true")
+    .transform((v) => v === "true"),
+  /** New (uncached) web lookups per day across all users. Each costs a web search plus model tokens. */
+  POLICY_LOOKUP_DAILY_LIMIT: z.coerce.number().int().nonnegative().default(100),
   // Sign-ups per IP per minute (raised only for the e2e suite, which signs up many users).
   SIGNUP_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().positive().default(5),
   MAX_IMPORT_DOCUMENTS: z.coerce.number().int().positive().default(300),

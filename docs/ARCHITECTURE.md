@@ -531,3 +531,27 @@ That's about 2.5–3 weeks of focused build. The first end-to-end "upload → ac
 - **Credit and confirmation codes** are encrypted in `travel_credits.credit_reference_enc` and scrubbed from stored document text and extraction JSON.
 - **The forwarding address (Phase 1.5)** is built: Cloudflare Email Routing → Email Worker → signed webhook (`/api/inbound/email`) → `ingest()` with `source: "email_forward"`. Past email comes in through a one-time Google Takeout import (`source: "email_import"`). See `docs/EMAIL_FORWARDING.md`.
 - **HEIC is rejected** with a clear message. The prebuilt `sharp` can't decode it, and mobile browsers usually convert to JPEG on upload.
+
+
+## Web policy lookups
+
+When a receipt doesn't state a return window or warranty, and the store or brand isn't in the reviewed list (`src/server/derivation/merchantPolicies.ts`), a background job (`lookup-policy`) researches the public policy:
+
+1. **Research** (`AIProvider.researchPolicy`): Claude uses web search and web fetch to find and read the store's or manufacturer's official policy page. The query contains only the store or brand, a product-type bucket and a short product hint with serial numbers stripped. No user data is included.
+2. **Extract** (task `policy`): a structured-output call reads only the fetched page text.
+3. **Verify** (`src/server/policies/verify.ts`): the answer is accepted only if
+   - it cites a page we fetched,
+   - the quote appears verbatim on that page,
+   - the quote is about returns or warranties, and it states the claimed duration, and
+   - the duration is plausible.
+4. **Apply**:
+   - The result is written as an **Estimated** fact (`merchant_policy` / `manufacturer_default`), with the quote and a `source_url` link.
+   - It never overrides a date that is printed on the document or entered by the user.
+   - Without a purchase date, the policy is shown and the deadline stays Unknown.
+
+Results are cached in `policy_lookups`, shared across users because they contain no user data:
+- found: 30 days
+- not found: 14 days
+- failed: 1 day
+
+`POLICY_LOOKUP_DAILY_LIMIT` caps new lookups per day. "Lost the receipt?" (`/add/manual`) creates a purchase from what the user types and goes through the same lookup.

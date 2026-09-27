@@ -17,7 +17,7 @@ export const dynamic = "force-dynamic";
 export default async function Home() {
   const user = await requireUser();
   const d = await getDashboard(user.id);
-  if (d.counts.documents === 0) redirect("/welcome");
+  if (d.counts.documents === 0 && d.counts.items === 0) redirect("/welcome");
 
   const attention = d.needsAttention;
   const hour = Number(new Intl.DateTimeFormat("en-US", { hour: "numeric", hourCycle: "h23", timeZone: user.timezone }).format(new Date()));

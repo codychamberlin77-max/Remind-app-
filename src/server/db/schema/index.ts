@@ -277,6 +277,8 @@ export const itemFacts = pgTable(
     evidence: text("evidence"),
     /** Plain-English explanation shown under the fact ("Based on Best Buy's typical policy…"). */
     explanation: text("explanation"),
+    /** Public web page a policy-based estimate came from (e.g. the store's return policy). */
+    sourceUrl: text("source_url"),
     confidence: real("confidence").notNull(),
     userConfirmedAt: timestamp("user_confirmed_at", { withTimezone: true }),
     userEditedAt: timestamp("user_edited_at", { withTimezone: true }),
@@ -609,6 +611,32 @@ export const emailImports = pgTable(
     finishedAt: timestamp("finished_at", { withTimezone: true }),
   },
   (t) => [index("email_imports_user_idx").on(t.userId, t.createdAt)],
+);
+
+/**
+ * Shared cache of public store return policies and manufacturer warranties
+ * found on the web. Contains NO user data (only store/brand + product type),
+ * so it is readable by every user and deliberately not under RLS.
+ */
+export const policyLookups = pgTable(
+  "policy_lookups",
+  {
+    id: id(),
+    kind: text("kind").$type<"return" | "warranty">().notNull(),
+    /** Normalized cache key, e.g. "return|target|electronics" or "warranty|samsung|tv". */
+    key: text("key").notNull(),
+    subject: text("subject").notNull(),
+    category: text("category").notNull(),
+    status: text("status").$type<"found" | "not_found" | "failed">().notNull(),
+    result: jsonb("result").$type<Record<string, unknown>>(),
+    model: text("model"),
+    searches: integer("searches").notNull().default(0),
+    inputTokens: integer("input_tokens").notNull().default(0),
+    outputTokens: integer("output_tokens").notNull().default(0),
+    checkedAt: timestamp("checked_at", { withTimezone: true }).notNull().defaultNow(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  },
+  (t) => [uniqueIndex("policy_lookups_key_uidx").on(t.key), index("policy_lookups_checked_idx").on(t.checkedAt)],
 );
 
 /** Tables protected by RLS (kept in sync with the RLS migration; asserted by tests). */
