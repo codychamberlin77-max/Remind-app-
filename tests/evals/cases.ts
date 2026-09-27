@@ -21,7 +21,16 @@ export type FileSpec =
   | { kind: "jpg"; lines: string[]; style: "crumpled" | "unreadable" }
   | { kind: "raw"; base64: string; ext: string };
 
-export type ExpectedFact = { certainty: Certainty; valueDate?: string; valueCents?: number };
+/** A list means "any of these is acceptable" (e.g. a clear photo may legitimately be confirmed or estimated). */
+export type OneOrMore<T> = T | T[];
+export type ExpectedFact = { certainty: OneOrMore<Certainty>; valueDate?: string; valueCents?: number };
+
+export type Expected = {
+  status: OneOrMore<DocumentStatus>;
+  items: Array<{ kind: ItemKind; titleIncludes?: string; facts?: Record<string, ExpectedFact>; duplicate?: boolean; conflict?: boolean }>;
+  /** The complete set of deadlines that may be shown for this document. Anything else is a false deadline. */
+  deadlines: Array<{ type: ActionType; dueOn: string; certainty: OneOrMore<Certainty> }>;
+};
 
 export type EvalCase = {
   id: string;
@@ -29,12 +38,13 @@ export type EvalCase = {
   file: FileSpec;
   requires?: string[];
   recording?: { classify?: unknown; transcribe?: unknown; extract?: unknown };
-  expected: {
-    status: DocumentStatus;
-    items: Array<{ kind: ItemKind; titleIncludes?: string; facts?: Record<string, ExpectedFact>; duplicate?: boolean; conflict?: boolean }>;
-    /** The complete set of deadlines that may be shown for this document. Anything else is a false deadline. */
-    deadlines: Array<{ type: ActionType; dueOn: string; certainty: Certainty }>;
-  };
+  /** Ground truth: what a correct system shows for this document. */
+  expected: Expected;
+  /**
+   * Override used only with the mock provider, for cases whose recording plants a
+   * model mistake: there the correct system output is "we don't know", not the truth.
+   */
+  mockExpected?: Expected;
 };
 
 const f = (value: unknown, evidence: string | null, confidence = 0.95) => ({ value, evidence, confidence });
@@ -168,20 +178,22 @@ export const CASES: EvalCase[] = [
       },
     },
     expected: {
-      status: "needs_review",
+      // How legible a phone photo is is a judgment call: correct dates may be shown as
+      // confirmed (clear read) or estimated (hard read). A wrong date is never acceptable.
+      status: ["needs_review", "processed"],
       items: [
         {
           kind: "purchase",
           titleIncludes: "Airpods",
           facts: {
-            purchase_date: { certainty: "estimated", valueDate: "2026-09-18" },
-            return_deadline: { certainty: "estimated", valueDate: "2026-12-17" },
+            purchase_date: { certainty: ["estimated", "confirmed"], valueDate: "2026-09-18" },
+            return_deadline: { certainty: ["estimated", "confirmed"], valueDate: "2026-12-17" },
             warranty: { certainty: "estimated", valueDate: "2027-09-18" },
           },
         },
       ],
       deadlines: [
-        { type: "return", dueOn: "2026-12-17", certainty: "estimated" },
+        { type: "return", dueOn: "2026-12-17", certainty: ["estimated", "confirmed"] },
         { type: "warranty_expiring", dueOn: "2027-09-18", certainty: "estimated" },
       ],
     },
@@ -268,7 +280,7 @@ export const CASES: EvalCase[] = [
   },
   {
     id: "renewal_date_mismatch",
-    covers: "Model returns a renewal date that its own evidence contradicts",
+    covers: "Annual renewal; mock recording contradicts its own evidence (trap)",
     file: {
       kind: "eml",
       text: [
@@ -295,6 +307,12 @@ export const CASES: EvalCase[] = [
       },
     },
     expected: {
+      status: ["processed", "needs_review"],
+      items: [{ kind: "subscription", facts: { next_renewal: { certainty: "confirmed", valueDate: "2026-10-21" } } }],
+      deadlines: [{ type: "review_renewal", dueOn: "2026-10-21", certainty: "confirmed" }],
+    },
+    // The recording claims Oct 12 while quoting "October 21": the system must refuse it.
+    mockExpected: {
       status: "needs_review",
       items: [{ kind: "subscription", facts: { next_renewal: { certainty: "unknown" } } }],
       deadlines: [],

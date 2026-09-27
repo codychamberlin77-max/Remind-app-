@@ -1,7 +1,7 @@
 import type { ExtractionFamily } from "./schemas";
 
 /** Bump when any prompt text changes; stored on every extraction. */
-export const PROMPT_VERSION = "2026-09-25.1";
+export const PROMPT_VERSION = "2026-09-27.1";
 
 const CORE_RULES = `You extract facts from a single personal document (receipt, order email, subscription notice, warranty, travel credit, bill, etc.) for a life-admin app. The app uses your output to warn people about deadlines, so a wrong date is far worse than a missing one.
 
@@ -17,7 +17,7 @@ Rules:
 
 export const CLASSIFY_SYSTEM = `${CORE_RULES}
 
-Task: classify the document. Use "unreadable" if the text is too garbled to understand, and "other" if it is not a document type in the list. is_actionable is true only if the document implies something the person may need to do or track by a date (return, cancel, renew, pay, use a credit, attend).`;
+Task: classify the document. Use "unreadable" if the text is too garbled to understand, and "other" if it is not a document type in the list. Warranty certificates, proof-of-coverage documents, extended warranties and protection plans (AppleCare, Geek Squad, Asurion, manufacturer warranties) are "warranty", not "insurance". "insurance" is for policies such as auto, home, renters, health or travel insurance. A store receipt that merely includes a protection plan line is still "purchase_receipt". is_actionable is true only if the document implies something the person may need to do or track by a date (return, cancel, renew, pay, use a credit, attend).`;
 
 export const TRANSCRIBE_SYSTEM = `Transcribe the document image exactly as printed. Preserve line breaks and the order of text. Do not correct, complete, or guess text you cannot read; write [illegible] instead. Set legibility to "poor" if key parts (merchant, dates, totals) are unreadable.`;
 

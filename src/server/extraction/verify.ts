@@ -216,9 +216,16 @@ export function verifyDate(
     }
     explanation = `The document says “${f.evidence!.trim()}”, relative to ${formatDate(ctx.referenceIso)}.`;
     conf = Math.min(conf, 0.9);
+    // Our own parser resolved the weekday from a date printed on the document.
+    if (ctx.readCap === 1) conf = Math.max(conf, 0.85);
   } else if (c.yearInferred) {
     conf = Math.min(conf, ctx.referenceIso ? 0.85 : 0.6);
+    if (ctx.readCap === 1 && ctx.referenceIso) conf = Math.max(conf, 0.8);
     explanation = "The year isn't printed; we used the document's date to fill it in.";
+  } else if (ctx.readCap === 1) {
+    // Native text, verbatim quote, and our parser reads exactly this date: the
+    // model's self-reported doubt shouldn't downgrade an independently verified fact.
+    conf = Math.max(conf, 0.9);
   }
   return finalize(iso, f.evidence, round(conf), explanation);
 }

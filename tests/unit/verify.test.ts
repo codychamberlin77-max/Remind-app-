@@ -45,6 +45,17 @@ describe("verification", () => {
     expect(c.warnings).toContain("ungrounded_date:ret");
   });
 
+  it("trusts its own verification of a verbatim date in a text document, even if the model hedged", () => {
+    const v = verifyDate({ value: "2026-09-20", evidence: "Date: 09/20/2026", confidence: 0.6 }, ctx(), "pd", { kind: "past" });
+    expect(v.certainty).toBe("confirmed");
+  });
+
+  it("resolves a weekday against a printed sent date and confirms it", () => {
+    const d = new DocumentIndex("Date: 2026-09-23\nYour trial ends Sunday");
+    const v = verifyDate({ value: "2026-09-27", evidence: "Your trial ends Sunday", confidence: 0.7 }, ctx({ index: d, referenceIso: "2026-09-23" }), "trial");
+    expect(v.certainty).toBe("confirmed");
+  });
+
   it("never confirms a low-legibility read", () => {
     const v = verifyDate({ value: "2026-09-20", evidence: "Date: 09/20/2026", confidence: 0.95 }, ctx({ readCap: 0.45 }), "pd");
     expect(v.certainty).toBe("estimated");

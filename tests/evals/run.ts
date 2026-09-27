@@ -32,7 +32,14 @@ const { runEval, formatReport } = await import("./evaluate");
 const { closeDb } = await import("@/server/db/client");
 
 console.log(`[eval] running ${only?.length ?? "all"} cases with provider=${provider}…`);
-const report = await runEval({ provider, only });
+const report = await runEval({
+  provider,
+  only,
+  onCase: (r, i, n) => {
+    const ok = r.status.ok && r.items.ok && r.facts.every((f) => f.ok) && !r.deadlines.falseDeadlines.length && !r.deadlines.missed.length;
+    console.log(`[eval] ${i}/${n} ${ok ? "✓" : "✗"} ${r.id} (${r.processingMs ?? "—"}ms, type=${r.documentType ?? "—"})`);
+  },
+});
 console.log(formatReport(report));
 console.log(`[eval] summary ${JSON.stringify({ provider, ...report.metrics, calibration: undefined })}`);
 try {

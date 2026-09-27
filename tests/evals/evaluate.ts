@@ -6,15 +6,25 @@ import { registerMockRecordings, type MockRecording } from "@/server/ai/provider
 import { setClock } from "@/server/clock";
 import { db, schema, withUser } from "@/server/db/client";
 import { ingest } from "@/server/ingestion/ingest";
-import { CASES, EVAL_TODAY, type EvalCase, type ExpectedFact } from "./cases";
+import { CASES, EVAL_TODAY, type EvalCase, type Expected, type ExpectedFact, type OneOrMore } from "./cases";
+
+const asList = <T,>(v: OneOrMore<T>): T[] => (Array.isArray(v) ? v : [v]);
 
 const FIXTURES = path.resolve("tests/evals/fixtures");
 
 export type CaseResult = {
   id: string;
   covers: string;
-  status: { expected: string; actual: string; ok: boolean };
-  facts: Array<{ item: number; key: string; expected: ExpectedFact; actual: { certainty: string; valueDate: string | null; valueCents: number | null; confidence: number } | null; ok: boolean }>;
+  documentType: string | null;
+  status: { expected: string; actual: string; ok: boolean; reason: string | null };
+  facts: Array<{
+    item: number;
+    key: string;
+    expected: ExpectedFact;
+    actual: { certainty: string; valueDate: string | null; valueCents: number | null; confidence: number; basis: string; explanation: string | null } | null;
+    ok: boolean;
+  }>;
+  warnings: string[];
   deadlines: { shown: Array<{ type: string; dueOn: string | null; certainty: string }>; falseDeadlines: string[]; missed: string[] };
   items: { expected: number; actual: number; ok: boolean; notes: string[] };
   evidence: { proposed: number; rejected: number };
@@ -74,7 +84,8 @@ function countProposed(x: unknown): number {
 
 const REJECTION = /^(ungrounded_|date_mismatch|implausible_|future_past_date|deadline_before_purchase)/;
 
-async function runCase(c: EvalCase, manifest: Record<string, { file: string; sha256: string }>): Promise<CaseResult> {
+async function runCase(c: EvalCase, manifest: Record<string, { file: string; sha256: string }>, provider: string): Promise<CaseResult> {
+  const expected: Expected = provider === "mock" && c.mockExpected ? c.mockExpected : c.expected;
   const userId = uuidv7();
   await db().insert(schema.users).values({ id: userId, name: "Eval Runner", email: `eval-${userId}@example.com`, timezone: "America/New_York" });
 
@@ -94,6 +105,9 @@ async function runCase(c: EvalCase, manifest: Record<string, { file: string; sha
   let proposed = 0;
   let rejected = 0;
   let processingMs: number | null = null;
+  let documentType: string | null = null;
+  let failureReason: string | null = null;
+  let warnings: string[] = [];
   const tokens = { input: 0, output: 0 };
 
   if (res.status === "accepted" || res.status === "duplicate") {
@@ -102,6 +116,7 @@ async function runCase(c: EvalCase, manifest: Record<string, { file: string; sha
       const [doc] = await tx.select().from(schema.documents).where(eq(schema.documents.id, documentId));
       actualStatus = doc!.status;
       processingMs = doc!.processingMs;
+      failureReason = doc!.failureReason;
       items = await tx.select().from(schema.items).where(and(eq(schema.items.userId, userId), eq(schema.items.documentId, documentId))).orderBy(schema.items.createdAt);
       if (items.length) {
         const ids = items.map((i) => i.id);
@@ -110,6 +125,8 @@ async function runCase(c: EvalCase, manifest: Record<string, { file: string; sha
       }
       const [ex] = await tx.select().from(schema.documentExtractions).where(eq(schema.documentExtractions.documentId, documentId));
       if (ex) {
+        documentType = ex.documentType;
+        warnings = ex.warnings;
         proposed = countProposed(ex.rawOutput);
         rejected = ex.warnings.filter((w) => REJECTION.test(w)).length;
         tokens.input = ex.inputTokens ?? 0;
@@ -122,7 +139,7 @@ async function runCase(c: EvalCase, manifest: Record<string, { file: string; sha
 
   // Items: match expected → actual in order by kind (+ title).
   const used = new Set<string>();
-  const matched = c.expected.items.map((e) => {
+  const matched = expected.items.map((e) => {
     const hit = items.find((i) => !used.has(i.id) && i.kind === e.kind && (!e.titleIncludes || i.title.toLowerCase().includes(e.titleIncludes.toLowerCase())));
     if (hit) used.add(hit.id);
     else notes.push(`missing item ${e.kind}${e.titleIncludes ? ` "${e.titleIncludes}"` : ""}`);
@@ -130,17 +147,17 @@ async function runCase(c: EvalCase, manifest: Record<string, { file: string; sha
     if (hit && e.conflict !== undefined && !!hit.conflictNote !== e.conflict) notes.push(`conflict flag expected ${e.conflict}`);
     return hit;
   });
-  const itemsOk = matched.every(Boolean) && items.length === c.expected.items.length && !notes.some((n) => n.startsWith("duplicate") || n.startsWith("conflict"));
+  const itemsOk = matched.every(Boolean) && items.length === expected.items.length && !notes.some((n) => n.startsWith("duplicate") || n.startsWith("conflict"));
 
   const factResults: CaseResult["facts"] = [];
-  c.expected.items.forEach((e, idx) => {
+  expected.items.forEach((e, idx) => {
     const item = matched[idx];
     for (const [key, exp] of Object.entries(e.facts ?? {})) {
       const f = item ? facts.find((x) => x.itemId === item.id && x.key === key) : undefined;
-      const actual = f ? { certainty: f.certainty, valueDate: f.valueDate, valueCents: f.valueCents, confidence: f.confidence } : null;
-      const certainty = actual?.certainty ?? "unknown";
+      const actual = f ? { certainty: f.certainty, valueDate: f.valueDate, valueCents: f.valueCents, confidence: f.confidence, basis: f.basis, explanation: f.explanation } : null;
+      const certainty = (actual?.certainty ?? "unknown") as never;
       const ok =
-        certainty === exp.certainty &&
+        asList(exp.certainty).includes(certainty) &&
         (exp.valueDate === undefined || actual?.valueDate === exp.valueDate) &&
         (exp.valueCents === undefined || actual?.valueCents === exp.valueCents);
       factResults.push({ item: idx, key, expected: exp, actual, ok });
@@ -151,19 +168,23 @@ async function runCase(c: EvalCase, manifest: Record<string, { file: string; sha
   const shown = actions.filter((a) => a.dueOn).map((a) => ({ type: a.type, dueOn: a.dueOn, certainty: a.dueCertainty }));
   const falseDeadlines: string[] = [];
   for (const s of shown) {
-    const exp = c.expected.deadlines.find((d) => d.type === s.type && d.dueOn === s.dueOn);
+    const exp = expected.deadlines.find((d) => d.type === s.type && d.dueOn === s.dueOn);
     if (!exp) falseDeadlines.push(`${s.type} ${s.dueOn} (${s.certainty}) is not a correct deadline`);
-    else if (RANK[s.certainty] > RANK[exp.certainty]) falseDeadlines.push(`${s.type} ${s.dueOn} shown as ${s.certainty}, should be ${exp.certainty}`);
+    else if (RANK[s.certainty] > Math.max(...asList(exp.certainty).map((x) => RANK[x]))) {
+      falseDeadlines.push(`${s.type} ${s.dueOn} shown as ${s.certainty}, should be ${asList(exp.certainty).join(" or ")}`);
+    }
   }
-  const missed = c.expected.deadlines.filter((d) => !shown.some((s) => s.type === d.type && s.dueOn === d.dueOn)).map((d) => `${d.type} ${d.dueOn}`);
+  const missed = expected.deadlines.filter((d) => !shown.some((s) => s.type === d.type && s.dueOn === d.dueOn)).map((d) => `${d.type} ${d.dueOn}`);
 
   return {
     id: c.id,
     covers: c.covers,
-    status: { expected: c.expected.status, actual: actualStatus, ok: actualStatus === c.expected.status },
+    documentType,
+    status: { expected: asList(expected.status).join(" or "), actual: actualStatus, ok: (asList(expected.status) as string[]).includes(actualStatus), reason: failureReason },
+    warnings,
     facts: factResults,
     deadlines: { shown, falseDeadlines, missed },
-    items: { expected: c.expected.items.length, actual: items.length, ok: itemsOk, notes },
+    items: { expected: expected.items.length, actual: items.length, ok: itemsOk, notes },
     evidence: { proposed, rejected },
     processingMs,
     tokens,
@@ -174,19 +195,23 @@ function pct(n: number, d: number) {
   return d === 0 ? 1 : Math.round((n / d) * 10000) / 10000;
 }
 
-export async function runEval(opts: { provider: string; only?: string[] }): Promise<EvalReport> {
+export async function runEval(opts: { provider: string; only?: string[]; onCase?: (r: CaseResult, i: number, n: number) => void }): Promise<EvalReport> {
   setClock(new Date(`${EVAL_TODAY}T16:00:00Z`));
   try {
     if (opts.provider === "mock") await registerCaseRecordings();
     const manifest = await loadManifest();
     const cases = CASES.filter((c) => !opts.only?.length || opts.only.includes(c.id));
     const results: CaseResult[] = [];
-    for (const c of cases) results.push(await runCase(c, manifest));
+    for (const [i, c] of cases.entries()) {
+      const r = await runCase(c, manifest, opts.provider);
+      results.push(r);
+      opts.onCase?.(r, i + 1, cases.length);
+    }
 
     const facts = results.flatMap((r) => r.facts);
     const shown = results.flatMap((r) => r.deadlines.shown);
     const falseDl = results.flatMap((r) => r.deadlines.falseDeadlines);
-    const expectedDl = cases.reduce((n, c) => n + c.expected.deadlines.length, 0);
+    const expectedDl = cases.reduce((n, c) => n + (opts.provider === "mock" && c.mockExpected ? c.mockExpected : c.expected).deadlines.length, 0);
     const missed = results.reduce((n, r) => n + r.deadlines.missed.length, 0);
     const proposed = results.reduce((n, r) => n + r.evidence.proposed, 0);
     const rejected = results.reduce((n, r) => n + r.evidence.rejected, 0);
@@ -264,13 +289,19 @@ export function formatReport(r: EvalReport): string {
   ];
   for (const c of r.cases) {
     const bad = [
-      !c.status.ok ? `status ${c.status.actual} ≠ ${c.status.expected}` : null,
+      !c.status.ok ? `status ${c.status.actual} ≠ ${c.status.expected}${c.status.reason ? ` (${c.status.reason})` : ""}` : null,
       ...c.items.notes,
-      ...c.facts.filter((f) => !f.ok).map((f) => `fact ${f.key}: got ${f.actual ? `${f.actual.certainty} ${f.actual.valueDate ?? f.actual.valueCents ?? ""}` : "none"}, want ${f.expected.certainty} ${f.expected.valueDate ?? f.expected.valueCents ?? ""}`),
+      ...c.facts
+        .filter((f) => !f.ok)
+        .map(
+          (f) =>
+            `fact ${f.key}: got ${f.actual ? `${f.actual.certainty} ${f.actual.valueDate ?? f.actual.valueCents ?? ""} [basis=${f.actual.basis} conf=${f.actual.confidence}]` : "none"}, want ${asList(f.expected.certainty).join("/")} ${f.expected.valueDate ?? f.expected.valueCents ?? ""}`,
+        ),
       ...c.deadlines.falseDeadlines.map((d) => `FALSE DEADLINE: ${d}`),
       ...c.deadlines.missed.map((d) => `missed deadline: ${d}`),
     ].filter(Boolean);
-    lines.push(`  ${bad.length ? "✗" : "✓"} ${c.id.padEnd(26)} ${c.processingMs ?? "—"}ms  ${bad.join("; ")}`);
+    const diag = bad.length ? `  [type=${c.documentType ?? "—"}${c.warnings.length ? ` warnings=${c.warnings.join(",")}` : ""}]` : "";
+    lines.push(`  ${bad.length ? "✗" : "✓"} ${c.id.padEnd(26)} ${c.processingMs ?? "—"}ms  ${bad.join("; ")}${diag}`);
   }
   return lines.join("\n");
 }
