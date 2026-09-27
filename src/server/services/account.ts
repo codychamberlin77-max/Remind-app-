@@ -29,7 +29,14 @@ async function purgeObjects(userId: string) {
 /**
  * Deletes every document, file and extracted record but keeps the account.
  */
+/** Revoke our access at Google/Microsoft and delete the stored tokens. */
+async function disconnectAllInboxes(userId: string) {
+  const { disconnect, listConnections } = await import("./connections");
+  for (const c of await listConnections(userId)) await disconnect(userId, c.id).catch(() => undefined);
+}
+
 export async function deleteAllData(userId: string) {
+  await disconnectAllInboxes(userId);
   await withUser(userId, async (tx) => {
     await tx.delete(schema.documents).where(eq(schema.documents.userId, userId)); // cascades to items → facts/actions/reminders/protections
     await tx.delete(schema.items).where(eq(schema.items.userId, userId)); // any item not tied to a document
@@ -45,6 +52,7 @@ export async function deleteAllData(userId: string) {
  * events keep only the fact that a deletion happened (user_id → NULL).
  */
 export async function deleteAccount(userId: string) {
+  await disconnectAllInboxes(userId);
   await withUser(userId, (tx) => audit(tx, { userId, event: "account.deleted" }));
   await db().transaction(async (tx) => {
     // Session/auth rows are not under RLS; the users row cascade removes them too.

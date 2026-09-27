@@ -563,10 +563,16 @@ export const emailConnections = pgTable(
     provider: text("provider").$type<"gmail" | "outlook">().notNull(),
     emailAddress: text("email_address").notNull(),
     refreshTokenEnc: bytea("refresh_token_enc").notNull(),
+    /** Short-lived access token (encrypted) and when it expires; refreshed as needed. */
+    accessTokenEnc: bytea("access_token_enc"),
+    accessExpiresAt: timestamp("access_expires_at", { withTimezone: true }),
     scopes: text("scopes").array().notNull(),
+    /** ISO time of the newest message already considered; the next sync starts here. */
     syncCursor: text("sync_cursor"),
     status: text("status").$type<"active" | "revoked" | "error">().notNull().default("active"),
+    lastError: text("last_error"),
     lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
+    imported: integer("imported").notNull().default(0),
     createdAt: createdAt(),
   },
   (t) => [index("email_connections_user_idx").on(t.userId)],

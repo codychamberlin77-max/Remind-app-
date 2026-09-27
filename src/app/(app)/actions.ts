@@ -184,3 +184,22 @@ export async function markNotificationsReadAction(ids: string[]) {
     await markNotificationsRead(userId, ids);
   }, ["/notifications"]);
 }
+
+export async function disconnectInboxAction(connectionId: string) {
+  uuid.parse(connectionId);
+  return run(async (userId) => {
+    const { disconnect } = await import("@/server/services/connections");
+    await disconnect(userId, connectionId);
+    return "Disconnected. We deleted our access to that inbox.";
+  }, ["/email"]);
+}
+
+export async function syncInboxNowAction(connectionId: string) {
+  uuid.parse(connectionId);
+  return run(async (userId) => {
+    const { enqueue } = await import("@/server/jobs/queue");
+    const { QUEUES } = await import("@/server/jobs/queues");
+    await enqueue(QUEUES.syncMailbox, { userId, connectionId });
+    return "Checking your inbox now.";
+  }, ["/email"]);
+}

@@ -5,6 +5,7 @@
  *   - refreshes priorities / expiries (daily)
  *   - purges deleted users' objects
  *   - scans past-email imports
+ *   - syncs connected Gmail / Outlook inboxes every 15 minutes
  *   - looks up store return policies / manufacturer warranties on the web
  */
 import { PgBoss } from "pg-boss";
@@ -34,11 +35,16 @@ async function main() {
   await boss.work(QUEUES.lookupPolicy, { batchSize: 2 }, async (jobs) => {
     for (const j of jobs) await handlers[QUEUES.lookupPolicy](j.data as never);
   });
+  await boss.work(QUEUES.syncMailbox, { batchSize: 2 }, async (jobs) => {
+    for (const j of jobs) await handlers[QUEUES.syncMailbox](j.data as never);
+  });
+  await boss.work(QUEUES.syncMailboxes, async () => handlers[QUEUES.syncMailboxes]());
   await boss.work(QUEUES.importMailbox, async (jobs) => {
     for (const j of jobs) await handlers[QUEUES.importMailbox](j.data as never);
   });
 
   await boss.schedule(QUEUES.dispatchReminders, "* * * * *");
+  await boss.schedule(QUEUES.syncMailboxes, "*/15 * * * *"); // connected Gmail / Outlook inboxes
   await boss.schedule(QUEUES.reprioritize, "15 * * * *"); // hourly: users' "today" rolls over at different times
 
   console.log(`[worker] started (ai=${e.AI_PROVIDER}, storage=${e.STORAGE_DRIVER})`);

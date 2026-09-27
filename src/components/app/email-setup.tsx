@@ -139,7 +139,7 @@ function ImportSteps({ tab }: { tab: ImportTab }) {
 
 const fmt = (d: string) => new Date(d).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 
-export function EmailSetup({ initialStatus, initialImports }: { initialStatus: Status; initialImports: Import[] }) {
+export function EmailSetup({ initialStatus, initialImports, connect }: { initialStatus: Status; initialImports: Import[]; connect?: React.ReactNode }) {
   const [status, setStatus] = useState(initialStatus);
   const [imports, setImports] = useState(initialImports);
   const [tab, setTab] = useState<ForwardTab>("gmail");
@@ -269,10 +269,11 @@ export function EmailSetup({ initialStatus, initialImports }: { initialStatus: S
     return (
       <div className="space-y-6">
         <Header />
+        {connect}
         <Card className="p-5 flex gap-3">
           <CircleAlert className="size-5 text-muted shrink-0 mt-0.5" />
           <div className="text-[14px] text-muted">
-            <p className="text-ink font-medium">Email forwarding isn&apos;t set up on this server yet.</p>
+            <p className="text-ink font-medium">A forwarding address isn&apos;t set up on this server yet.</p>
             <p className="mt-1">Until then, you can import past email below, or <Link className="underline" href="/add">upload</Link> screenshots, PDFs, or saved .eml emails.</p>
           </div>
         </Card>
@@ -285,8 +286,10 @@ export function EmailSetup({ initialStatus, initialImports }: { initialStatus: S
     <div className="space-y-10">
       <Header />
 
+      {connect}
+
       <section>
-        <SectionTitle>Your private address</SectionTitle>
+        <SectionTitle>Or use your private address</SectionTitle>
         <Card className="p-5 space-y-3">
           <div className="flex flex-wrap items-center gap-3 justify-between">
             <code className="text-[15px] font-medium break-all select-all" data-testid="forwarding-address">{status.address}</code>

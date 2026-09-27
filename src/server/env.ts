@@ -69,6 +69,13 @@ const schema = z.object({
   INBOUND_EMAIL_SECRET: z.string().optional(),
   // Past-email import (Google Takeout .mbox / .zip).
   MAX_IMPORT_BYTES: z.coerce.number().int().positive().default(1024 * 1024 * 1024),
+  // "Connect Gmail / Outlook" (read-only inbox access). Gmail falls back to the Google sign-in client.
+  GMAIL_CLIENT_ID: z.string().optional(),
+  GMAIL_CLIENT_SECRET: z.string().optional(),
+  MICROSOFT_CLIENT_ID: z.string().optional(),
+  MICROSOFT_CLIENT_SECRET: z.string().optional(),
+  /** How far back the first sync of a newly connected inbox looks. */
+  MAIL_SYNC_BACKFILL_DAYS: z.coerce.number().int().positive().max(730).default(90),
   // Web lookups of store return policies / manufacturer warranties (shared cache, see src/server/policies).
   POLICY_LOOKUP_ENABLED: z
     .enum(["true", "false"])
