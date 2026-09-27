@@ -66,9 +66,12 @@ export function planFromFacts(item: PlanInput, today: string): { protections: Pl
       const cents = known(total) ? total.valueCents ?? null : null;
       const currency = total?.currency ?? "USD";
       const ret = get("return_deadline");
-      if (known(ret) && ret.valueDate && cents != null) {
+      if (known(ret) && ret.valueDate) {
         const open = isOpen(today, ret.valueDate);
-        protections.push({ kind: "return_window", amountCents: cents, currency, activeUntil: ret.valueDate, certainty: ret.certainty, status: open ? "active" : "expired" });
+        // Money Protected needs an amount; the reminder doesn't (e.g. a purchase added without a price).
+        if (cents != null) {
+          protections.push({ kind: "return_window", amountCents: cents, currency, activeUntil: ret.valueDate, certainty: ret.certainty, status: open ? "active" : "expired" });
+        }
         if (open) {
           actions.push({
             type: "return",
@@ -81,7 +84,7 @@ export function planFromFacts(item: PlanInput, today: string): { protections: Pl
             consequence: "lose_money",
             suggestedAction: `Decide whether to keep it before ${formatDate(ret.valueDate, { withYear: false })}.`,
             confidence: ret.confidence,
-            protectionKind: "return_window",
+            protectionKind: cents != null ? "return_window" : undefined,
           });
         }
       }

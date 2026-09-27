@@ -1,0 +1,2 @@
+ALTER TABLE "notification_preferences" ADD COLUMN "auto_reminders" boolean DEFAULT true NOT NULL;--> statement-breakpoint
+ALTER TABLE "notification_preferences" ADD COLUMN "auto_offsets" smallint[] DEFAULT '{7,3,0}'::smallint[] NOT NULL;

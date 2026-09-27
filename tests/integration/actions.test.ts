@@ -34,7 +34,8 @@ describe("reminders", () => {
     await createReminder(u.id, { actionId: a.actionId, preset: "3_days_before" });
     const r2 = await createReminder(u.id, { actionId: a.actionId, preset: "tomorrow" });
     const list = await listReminders(u.id);
-    expect(list.filter((r) => r.status === "scheduled")).toHaveLength(1);
+    // One manual reminder (replaced, not stacked), alongside the automatic ones.
+    expect(list.filter((r) => r.status === "scheduled" && !r.preset.startsWith("auto_"))).toHaveLength(1);
 
     // Deliver: move the reminder into the past.
     // Test setup via the admin connection (the app role can't touch rows without a user context).
@@ -78,8 +79,12 @@ describe("edits and confirmations", () => {
     expect(ret.certainty).toBe("estimated"); // still a policy estimate
     const action = item.actions.find((x) => x.type === "return")!;
     expect(action.dueOn).toBe(addDays(today, 14));
-    const rem = (await listReminders(u.id)).find((r) => r.status === "scheduled")!;
+    const rem = (await listReminders(u.id)).find((r) => r.status === "scheduled" && r.preset === "3_days_before")!;
     expect(rem.remindAt.toISOString().slice(0, 10)).toBe(addDays(today, 11));
+    // Automatic reminders moved with the deadline too.
+    const auto = (await listReminders(u.id)).filter((r) => r.status === "scheduled" && r.actionId === a.actionId && r.preset.startsWith("auto_"));
+    expect(auto.map((r) => r.preset).sort()).toEqual(["auto_0d", "auto_3d", "auto_7d"]);
+    expect(auto.find((r) => r.preset === "auto_0d")!.remindAt.toISOString().slice(0, 10)).toBe(addDays(today, 14));
   });
 
   it("'Looks right' confirms an estimate; Money Saved only comes from user-confirmed outcomes", async () => {

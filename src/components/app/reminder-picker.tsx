@@ -66,6 +66,7 @@ export function ReminderPicker({
             </p>
           ) : (
             <>
+              {dueOn ? <p className="px-3 pt-2.5 pb-1 text-[12px] text-muted leading-snug">We already remind you 1 week, 3 days and on the day. Add another:</p> : null}
               <p className="px-3 pt-2 pb-1.5 text-[12px] text-subtle">Remind me</p>
               {PRESETS.filter((p) => !("needsDue" in p) || dueOn).map((p) => (
                 <button

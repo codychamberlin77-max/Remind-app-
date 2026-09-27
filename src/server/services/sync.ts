@@ -2,7 +2,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { schema, type Tx } from "@/server/db/client";
 import { factNeedsReview, planFromFacts, type FactLike } from "@/server/derivation/plan";
 import { priorityReason, priorityScore } from "@/server/derivation/priority";
-import { rescheduleForAction } from "./reminders";
+import { rescheduleForAction, syncAutoReminders } from "./reminders";
 
 /**
  * Re-plan an item's protections and actions from its (possibly edited) facts
@@ -65,6 +65,13 @@ export async function syncItemFromFacts(tx: Tx, userId: string, itemId: string, 
   }
   const staleA = existingA.filter((e) => !planned.some((a) => a.type === e.type) && e.status !== "done").map((e) => e.id);
   if (staleA.length) await tx.delete(schema.actions).where(inArray(schema.actions.id, staleA));
+
+  // Automatic reminders: 1 week, 3 days and the day of each deadline.
+  const current = await tx
+    .select({ id: schema.actions.id, dueOn: schema.actions.dueOn, dueCertainty: schema.actions.dueCertainty, status: schema.actions.status })
+    .from(schema.actions)
+    .where(and(eq(schema.actions.userId, userId), eq(schema.actions.itemId, itemId)));
+  for (const a of current) await syncAutoReminders(tx, userId, a, tz);
 
   // ── Item summary + typed projections
   const amountKey = item.kind === "purchase" ? "total" : item.kind === "warranty" ? "purchase_price" : "amount";

@@ -44,6 +44,7 @@ import type {
   ProtectionKind,
   ProtectionStatus,
   ReminderChannel,
+  AnyReminderPreset,
   ReminderPreset,
   ReminderStatus,
 } from "@/server/domain/types";
@@ -466,7 +467,7 @@ export const reminders = pgTable(
       .notNull()
       .references(() => actions.id, { onDelete: "cascade" }),
     remindAt: timestamp("remind_at", { withTimezone: true }).notNull(),
-    preset: text("preset").$type<ReminderPreset>().notNull(),
+    preset: text("preset").$type<AnyReminderPreset>().notNull(),
     channels: text("channels").array().$type<ReminderChannel[]>().notNull(),
     status: text("status").$type<ReminderStatus>().notNull().default("scheduled"),
     attempts: integer("attempts").notNull().default(0),
@@ -506,6 +507,9 @@ export const notificationPreferences = pgTable("notification_preferences", {
   defaultPreset: text("default_preset").$type<ReminderPreset>().notNull().default("3_days_before"),
   /** Local hour (0–23, user timezone) reminders are delivered at. */
   deliveryHour: smallint("delivery_hour").notNull().default(9),
+  /** Remind automatically before every deadline, `autoOffsets` days before (0 = the day of). */
+  autoReminders: boolean("auto_reminders").notNull().default(true),
+  autoOffsets: smallint("auto_offsets").array().$type<number[]>().notNull().default(sql`'{7,3,0}'::smallint[]`),
   updatedAt: updatedAt(),
 });
 

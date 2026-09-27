@@ -41,17 +41,55 @@ export function ProfileForm({ name, timezone, timezones }: { name: string; timez
   );
 }
 
-export function NotificationForm({ emailEnabled, inAppEnabled, deliveryHour }: { emailEnabled: boolean; inAppEnabled: boolean; deliveryHour: number }) {
+const OFFSETS = [
+  [7, "1 week before"],
+  [3, "3 days before"],
+  [0, "On the day"],
+] as const;
+
+export function NotificationForm({
+  emailEnabled,
+  inAppEnabled,
+  deliveryHour,
+  autoReminders,
+  autoOffsets,
+}: {
+  emailEnabled: boolean;
+  inAppEnabled: boolean;
+  deliveryHour: number;
+  autoReminders: boolean;
+  autoOffsets: number[];
+}) {
   const [pending, start] = useTransition();
-  const [state, setState] = useState({ emailEnabled, inAppEnabled, deliveryHour });
+  const [state, setState] = useState({ emailEnabled, inAppEnabled, deliveryHour, autoReminders, autoOffsets });
   const save = (next: typeof state) => {
     setState(next);
     start(async () => { await updatePreferencesAction(next); });
   };
+  const toggleOffset = (o: number) => {
+    const has = state.autoOffsets.includes(o);
+    const next = has ? state.autoOffsets.filter((x) => x !== o) : [...state.autoOffsets, o];
+    save({ ...state, autoOffsets: next, autoReminders: next.length > 0 ? state.autoReminders || !has : false });
+  };
   return (
-    <div className="space-y-4" aria-busy={pending}>
+    <div className="space-y-5" aria-busy={pending}>
+      <div className="space-y-3">
+        <Toggle label="Automatic reminders" hint="Before every deadline we find, without you setting anything." checked={state.autoReminders} onChange={(v) => save({ ...state, autoReminders: v, autoOffsets: v && !state.autoOffsets.length ? [7, 3, 0] : state.autoOffsets })} />
+        {state.autoReminders ? (
+          <div className="flex flex-wrap gap-2" role="group" aria-label="When to remind">
+            {OFFSETS.map(([o, label]) => {
+              const on = state.autoOffsets.includes(o);
+              return (
+                <button key={o} type="button" aria-pressed={on} onClick={() => toggleOffset(o)} className={`h-9 px-4 rounded-full text-[13.5px] font-medium press ${on ? "bg-ink text-white" : "bg-surface text-muted"}`}>
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
+      </div>
       <Toggle label="Email reminders" hint="Sent to your account email." checked={state.emailEnabled} onChange={(v) => save({ ...state, emailEnabled: v })} />
-      <Toggle label="In-app reminders" hint="Shown in LIFEOS." checked={state.inAppEnabled} onChange={(v) => save({ ...state, inAppEnabled: v })} />
+      <Toggle label="In-app reminders" hint="Shown under the bell in LIFEOS." checked={state.inAppEnabled} onChange={(v) => save({ ...state, inAppEnabled: v })} />
       <div className="flex items-center justify-between gap-4">
         <div>
           <p className="text-[14.5px] font-medium">Delivery time</p>
@@ -73,7 +111,7 @@ function Toggle({ label, hint, checked, onChange }: { label: string; hint: strin
         <span className="block text-[14.5px] font-medium">{label}</span>
         <span className="block text-[12.5px] text-subtle">{hint}</span>
       </span>
-      <button type="button" role="switch" aria-checked={checked} onClick={() => onChange(!checked)} className={`relative h-6 w-10 rounded-full transition-colors ${checked ? "bg-ink" : "bg-line-strong"}`}>
+      <button type="button" role="switch" aria-checked={checked} onClick={() => onChange(!checked)} className={`relative h-6 w-10 shrink-0 rounded-full transition-colors ${checked ? "bg-leaf" : "bg-line-strong"}`}>
         <span className={`absolute top-0.5 size-5 rounded-full bg-white shadow transition-transform ${checked ? "translate-x-[18px]" : "translate-x-0.5"}`} />
       </button>
     </label>

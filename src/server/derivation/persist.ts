@@ -3,6 +3,7 @@ import { schema, type Tx } from "@/server/db/client";
 import { daysBetween } from "@/server/extraction/dates";
 import { encryptField } from "@/server/privacy/crypto";
 import type { DerivedItem } from "./derive";
+import { syncAutoReminders } from "@/server/services/reminders";
 import { priorityReason, priorityScore } from "./priority";
 
 let categoryIds: Map<string, string> | undefined;
@@ -73,6 +74,7 @@ export async function persistDerivedItems(
   tx: Tx,
   args: { userId: string; documentId: string; extractionId: string | null; items: DerivedItem[]; today: string },
 ): Promise<{ ids: string[]; conflicts: number }> {
+  let tz: string | undefined;
   const { userId, documentId, extractionId, today } = args;
   await tx.delete(schema.items).where(and(eq(schema.items.userId, userId), eq(schema.items.documentId, documentId)));
   const cats = await categoryMap(tx);
@@ -150,7 +152,7 @@ export async function persistDerivedItems(
     // Suspected duplicates don't generate a second set of reminders/actions.
     if (!dup) {
       for (const a of item.actions) {
-        await tx.insert(schema.actions).values({
+        const [created] = await tx.insert(schema.actions).values({
           userId,
           itemId,
           protectionId: a.protectionKind ? protectionIds.get(a.protectionKind) ?? null : null,
@@ -166,7 +168,10 @@ export async function persistDerivedItems(
           priorityReason: priorityReason(a, today),
           suggestedAction: a.suggestedAction,
           confidence: a.confidence,
-        });
+        }).returning({ id: schema.actions.id, dueOn: schema.actions.dueOn, dueCertainty: schema.actions.dueCertainty, status: schema.actions.status });
+        // Automatic reminders: 1 week, 3 days and the day of the deadline.
+        tz ??= (await tx.select({ tz: schema.users.timezone }).from(schema.users).where(eq(schema.users.id, userId)))[0]?.tz ?? "America/New_York";
+        await syncAutoReminders(tx, userId, created!, tz);
       }
     }
   }

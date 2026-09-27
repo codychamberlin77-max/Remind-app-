@@ -11,6 +11,8 @@ export type Delivery = {
   itemId: string;
   title: string;
   body: string;
+  /** Sent by the automatic 1 week / 3 days / day-of schedule rather than a reminder the user set. */
+  automatic?: boolean;
 };
 
 /**
@@ -43,14 +45,17 @@ function escapeHtml(s: string) {
 
 export function renderReminderEmail(d: Delivery, appUrl: string) {
   const link = `${appUrl}/items/${d.itemId}`;
-  const text = `${d.title}\n\n${d.body}\n\nOpen: ${link}\n\nYou're receiving this because you set a reminder in LIFEOS. Manage reminders in Settings.`;
+  const why = d.automatic
+    ? "LIFEOS reminds you 1 week, 3 days, and on the day of each deadline. Change this in Settings."
+    : "You set this reminder in LIFEOS. Manage reminders in Settings.";
+  const text = `${d.title}\n\n${d.body}\n\nOpen: ${link}\n\n${why}\nSettings: ${appUrl}/settings`;
   const html = `<!doctype html><html><body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#111;background:#fafafa;padding:24px">
 <div style="max-width:480px;margin:0 auto;background:#fff;border:1px solid #eee;border-radius:14px;padding:24px">
 <p style="font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#888;margin:0 0 12px">Reminder</p>
 <h1 style="font-size:18px;margin:0 0 8px">${escapeHtml(d.title)}</h1>
 <p style="font-size:15px;line-height:1.5;color:#333;margin:0 0 20px">${escapeHtml(d.body)}</p>
 <a href="${link}" style="display:inline-block;background:#111;color:#fff;text-decoration:none;padding:10px 16px;border-radius:10px;font-size:14px">Open</a>
-<p style="font-size:12px;color:#999;margin:24px 0 0">You set this reminder in LIFEOS. Manage reminders in Settings.</p>
+<p style="font-size:12px;color:#999;margin:24px 0 0">${escapeHtml(why)} <a href="${appUrl}/settings" style="color:#999">Settings</a></p>
 </div></body></html>`;
   return { subject: d.title, text, html };
 }

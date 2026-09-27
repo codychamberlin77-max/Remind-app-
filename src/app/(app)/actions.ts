@@ -113,9 +113,17 @@ export async function deleteDocumentAction(documentId: string, redirectTo?: stri
   return res;
 }
 
-export async function updatePreferencesAction(input: { emailEnabled?: boolean; inAppEnabled?: boolean; deliveryHour?: number }) {
-  const p = z.object({ emailEnabled: z.boolean().optional(), inAppEnabled: z.boolean().optional(), deliveryHour: z.number().int().min(0).max(23).optional() }).parse(input);
-  return run((userId) => updatePreferences(userId, p), ["/settings"]);
+export async function updatePreferencesAction(input: { emailEnabled?: boolean; inAppEnabled?: boolean; deliveryHour?: number; autoReminders?: boolean; autoOffsets?: number[] }) {
+  const p = z
+    .object({
+      emailEnabled: z.boolean().optional(),
+      inAppEnabled: z.boolean().optional(),
+      deliveryHour: z.number().int().min(0).max(23).optional(),
+      autoReminders: z.boolean().optional(),
+      autoOffsets: z.array(z.union([z.literal(7), z.literal(3), z.literal(0)])).max(3).optional(),
+    })
+    .parse(input);
+  return run((userId) => updatePreferences(userId, p), ["/settings", "/home"]);
 }
 
 export async function updateProfileAction(input: { name?: string; timezone?: string }) {
@@ -167,4 +175,12 @@ export async function addManualPurchaseAction(input: { item: string; store: stri
     });
   }, ["/home"]);
   return r.ok ? { ok: true as const, itemId } : r;
+}
+
+export async function markNotificationsReadAction(ids: string[]) {
+  z.array(uuid).max(100).parse(ids);
+  return run(async (userId) => {
+    const { markNotificationsRead } = await import("@/server/services/reminders");
+    await markNotificationsRead(userId, ids);
+  }, ["/notifications"]);
 }

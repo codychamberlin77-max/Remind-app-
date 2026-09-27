@@ -1,8 +1,8 @@
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, like, notLike, sql } from "drizzle-orm";
 import { audit } from "@/server/audit/log";
 import { now as clockNow } from "@/server/clock";
 import { db, schema, withUser, type Tx } from "@/server/db/client";
-import type { ReminderChannel, ReminderPreset } from "@/server/domain/types";
+import type { AutoPreset, ReminderChannel, ReminderPreset } from "@/server/domain/types";
 import { addDays, daysBetween, formatDate, isValidIso, todayIn } from "@/server/extraction/dates";
 import { priorityReason } from "@/server/derivation/priority";
 import { getChannel } from "./notify";
@@ -59,7 +59,7 @@ export function resolveRemindDate(preset: ReminderPreset, today: string, dueOn: 
 
 async function prefsFor(tx: Tx, userId: string) {
   const [p] = await tx.select().from(schema.notificationPreferences).where(eq(schema.notificationPreferences.userId, userId));
-  return p ?? { emailEnabled: true, inAppEnabled: true, deliveryHour: 9, defaultPreset: "3_days_before" as ReminderPreset };
+  return p ?? { emailEnabled: true, inAppEnabled: true, deliveryHour: 9, defaultPreset: "3_days_before" as ReminderPreset, autoReminders: true, autoOffsets: [7, 3, 0] };
 }
 
 async function userTimezone(userId: string) {
@@ -94,11 +94,19 @@ export async function createReminder(
     // "Today" after the delivery hour means "shortly".
     if (remindAt.getTime() < now.getTime()) remindAt = new Date(now.getTime() + 5 * 60_000);
 
-    // One pending reminder per action: replace instead of stacking duplicates.
+    // One pending manual reminder per action: replace instead of stacking duplicates.
+    // Automatic reminders (1 week / 3 days / day of) are kept alongside it.
     await tx
       .update(schema.reminders)
       .set({ status: "cancelled" })
-      .where(and(eq(schema.reminders.userId, userId), eq(schema.reminders.actionId, action.id), eq(schema.reminders.status, "scheduled")));
+      .where(
+        and(
+          eq(schema.reminders.userId, userId),
+          eq(schema.reminders.actionId, action.id),
+          eq(schema.reminders.status, "scheduled"),
+          notLike(schema.reminders.preset, "auto_%"),
+        ),
+      );
     const [r] = await tx
       .insert(schema.reminders)
       .values({ userId, actionId: action.id, remindAt, preset: input.preset, channels: channelsFrom(prefs) })
@@ -139,6 +147,67 @@ export async function listReminders(userId: string) {
       .where(eq(schema.reminders.userId, userId))
       .orderBy(asc(schema.reminders.remindAt)),
   );
+}
+
+// ───────────────────────────── Automatic reminders ─────────────────────────────
+
+const AUTO: Record<AutoPreset, number> = { auto_7d: 7, auto_3d: 3, auto_0d: 0 };
+const PRESET_FOR: Record<number, AutoPreset> = { 7: "auto_7d", 3: "auto_3d", 0: "auto_0d" };
+export const AUTO_OFFSETS = [7, 3, 0] as const;
+
+type ActionForSync = { id: string; dueOn: string | null; dueCertainty: string; status: string };
+
+/**
+ * Keep an action's automatic reminders in line with its deadline and the
+ * user's preferences. Reminders the user cancelled, and ones already sent,
+ * are never recreated; past dates are skipped; system-removed ones are deleted
+ * (so re-enabling an offset later brings them back).
+ */
+export async function syncAutoReminders(tx: Tx, userId: string, action: ActionForSync, tz: string, opts: { now?: Date } = {}) {
+  const now = opts.now ?? clockNow();
+  const prefs = await prefsFor(tx, userId);
+  const open = action.status === "open" || action.status === "snoozed";
+  const wanted = new Map<AutoPreset, Date>();
+  if (prefs.autoReminders && open && action.dueOn && action.dueCertainty !== "unknown") {
+    for (const off of prefs.autoOffsets) {
+      const preset = PRESET_FOR[off];
+      if (!preset) continue;
+      const at = zonedInstant(addDays(action.dueOn, -off), prefs.deliveryHour, tz);
+      if (at.getTime() > now.getTime()) wanted.set(preset, at);
+    }
+  }
+  const existing = await tx
+    .select()
+    .from(schema.reminders)
+    .where(and(eq(schema.reminders.userId, userId), eq(schema.reminders.actionId, action.id), like(schema.reminders.preset, "auto_%")));
+  const channels = channelsFrom(prefs);
+  for (const preset of Object.keys(AUTO) as AutoPreset[]) {
+    const mine = existing.filter((r) => r.preset === preset);
+    const scheduled = mine.find((r) => r.status === "scheduled");
+    const handled = mine.some((r) => r.status !== "scheduled"); // sent, failed, or cancelled by the user
+    const at = wanted.get(preset);
+    if (!at) {
+      if (scheduled) await tx.delete(schema.reminders).where(eq(schema.reminders.id, scheduled.id));
+      continue;
+    }
+    if (scheduled) {
+      if (scheduled.remindAt.getTime() !== at.getTime()) await tx.update(schema.reminders).set({ remindAt: at, channels }).where(eq(schema.reminders.id, scheduled.id));
+    } else if (!handled) {
+      await tx.insert(schema.reminders).values({ userId, actionId: action.id, remindAt: at, preset, channels });
+    }
+  }
+}
+
+/** Re-sync every open deadline for a user (after a preference change, and hourly as a safety net). */
+export async function syncAutoRemindersForUser(userId: string, opts: { now?: Date } = {}) {
+  const tz = await userTimezone(userId);
+  await withUser(userId, async (tx) => {
+    const actions = await tx
+      .select({ id: schema.actions.id, dueOn: schema.actions.dueOn, dueCertainty: schema.actions.dueCertainty, status: schema.actions.status })
+      .from(schema.actions)
+      .where(eq(schema.actions.userId, userId));
+    for (const a of actions) await syncAutoReminders(tx, userId, a, tz, opts);
+  });
 }
 
 /** Keeps relative presets aligned when a due date changes (e.g. after an edit). */
@@ -200,7 +269,21 @@ async function deliverOne(userId: string, reminderId: string): Promise<boolean> 
       return true;
     }
 
-    const title = r.action.title;
+    // A manual and an automatic reminder landing together: send one.
+    const [recent] = await tx
+      .select({ id: schema.notifications.id })
+      .from(schema.notifications)
+      .where(and(eq(schema.notifications.userId, userId), eq(schema.notifications.actionId, r.action.id), sql`${schema.notifications.createdAt} > now() - interval '12 hours'`))
+      .limit(1);
+    if (recent) {
+      await tx.update(schema.reminders).set({ status: "cancelled", lastError: "duplicate within 12h" }).where(eq(schema.reminders.id, reminderId));
+      return true;
+    }
+
+    const auto = r.reminder.preset in AUTO;
+    const days = r.action.dueOn ? daysBetween(today, r.action.dueOn) : null;
+    const when = days == null ? null : days <= 0 ? "Today" : days === 1 ? "Tomorrow" : days === 7 ? "In 1 week" : `In ${days} days`;
+    const title = when ? `${when}: ${r.action.title}` : r.action.title;
     const body = [
       priorityReason(r.action, today),
       r.action.dueCertainty === "estimated" && r.action.description ? r.action.description : null,
@@ -212,7 +295,7 @@ async function deliverOne(userId: string, reminderId: string): Promise<boolean> 
     const errors: string[] = [];
     for (const ch of r.reminder.channels) {
       try {
-        await getChannel(ch).send(tx, { userId, email: user?.email ?? null, name: user?.name ?? null, reminderId, actionId: r.action.id, itemId: r.action.itemId, title, body });
+        await getChannel(ch).send(tx, { userId, email: user?.email ?? null, name: user?.name ?? null, reminderId, actionId: r.action.id, itemId: r.action.itemId, title, body, automatic: auto });
       } catch (e) {
         errors.push(`${ch}: ${(e as Error).message}`);
       }
@@ -243,6 +326,37 @@ export async function listNotifications(userId: string, limit = 30) {
   );
 }
 
+/** In-app inbox: reminders delivered to the bell, newest first, with a link target. */
+export async function listInbox(userId: string, limit = 50) {
+  return withUser(userId, (tx) =>
+    tx
+      .select({
+        id: schema.notifications.id,
+        title: schema.notifications.title,
+        body: schema.notifications.body,
+        createdAt: schema.notifications.createdAt,
+        readAt: schema.notifications.readAt,
+        itemId: schema.actions.itemId,
+        actionStatus: schema.actions.status,
+      })
+      .from(schema.notifications)
+      .leftJoin(schema.actions, eq(schema.actions.id, schema.notifications.actionId))
+      .where(and(eq(schema.notifications.userId, userId), eq(schema.notifications.channel, "in_app")))
+      .orderBy(sql`${schema.notifications.createdAt} desc`)
+      .limit(limit),
+  );
+}
+
+export async function unreadCount(userId: string) {
+  const [r] = await withUser(userId, (tx) =>
+    tx
+      .select({ n: sql<number>`count(*)::int` })
+      .from(schema.notifications)
+      .where(and(eq(schema.notifications.userId, userId), eq(schema.notifications.channel, "in_app"), sql`${schema.notifications.readAt} is null`)),
+  );
+  return r?.n ?? 0;
+}
+
 export async function markNotificationsRead(userId: string, ids: string[]) {
   if (!ids.length) return;
   await withUser(userId, (tx) =>
@@ -259,16 +373,29 @@ export async function getPreferences(userId: string) {
 
 export async function updatePreferences(
   userId: string,
-  p: { emailEnabled?: boolean; inAppEnabled?: boolean; deliveryHour?: number; defaultPreset?: ReminderPreset },
+  p: { emailEnabled?: boolean; inAppEnabled?: boolean; deliveryHour?: number; defaultPreset?: ReminderPreset; autoReminders?: boolean; autoOffsets?: number[] },
 ) {
+  if (p.autoOffsets && p.autoOffsets.some((o) => !(AUTO_OFFSETS as readonly number[]).includes(o))) throw new ReminderInputError("Invalid reminder timing");
+  if (p.autoOffsets) p = { ...p, autoOffsets: [...new Set(p.autoOffsets)].sort((a, b) => b - a) };
   if (p.deliveryHour != null && (!Number.isInteger(p.deliveryHour) || p.deliveryHour < 0 || p.deliveryHour > 23)) {
     throw new ReminderInputError("Invalid hour");
   }
-  return withUser(userId, async (tx) => {
+  await withUser(userId, async (tx) => {
     await tx
       .insert(schema.notificationPreferences)
       .values({ userId, ...p })
       .onConflictDoUpdate({ target: schema.notificationPreferences.userId, set: p });
     await audit(tx, { userId, event: "preferences.updated" });
   });
+  // Delivery hour, channels or automatic timing changed: move pending reminders to match.
+  await syncAutoRemindersForUser(userId);
+  if (p.deliveryHour != null || p.emailEnabled != null || p.inAppEnabled != null) {
+    const prefs = await getPreferences(userId);
+    await withUser(userId, (tx) =>
+      tx
+        .update(schema.reminders)
+        .set({ channels: channelsFrom(prefs) })
+        .where(and(eq(schema.reminders.userId, userId), eq(schema.reminders.status, "scheduled"))),
+    );
+  }
 }

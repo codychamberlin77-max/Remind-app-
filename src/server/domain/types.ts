@@ -82,7 +82,11 @@ export type OutcomeKind =
   | "other";
 
 export const REMINDER_PRESETS = ["today", "tomorrow", "3_days_before", "1_week_before", "custom"] as const;
+/** Automatic reminders before every deadline (not user-selectable presets). */
+export const AUTO_PRESETS = ["auto_7d", "auto_3d", "auto_0d"] as const;
+export type AutoPreset = (typeof AUTO_PRESETS)[number];
 export type ReminderPreset = (typeof REMINDER_PRESETS)[number];
+export type AnyReminderPreset = ReminderPreset | AutoPreset;
 export type ReminderChannel = "in_app" | "email" | "push" | "sms";
 export type ReminderStatus = "scheduled" | "sent" | "failed" | "cancelled";
 

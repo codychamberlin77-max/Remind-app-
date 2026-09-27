@@ -1,5 +1,5 @@
 "use client";
-import { FolderOpen, Home, Plus, Search, Settings } from "lucide-react";
+import { Bell, FolderOpen, Home, Plus, Search, Settings } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ const LINKS = [
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
-export function AppNav({ name }: { name: string }) {
+export function AppNav({ name, unread = 0 }: { name: string; unread?: number }) {
   const path = usePathname();
   return (
     <>
@@ -35,6 +35,18 @@ export function AppNav({ name }: { name: string }) {
             ))}
           </nav>
           <div className="flex items-center gap-2">
+            <Link
+              href="/notifications"
+              aria-label={unread ? `Notifications, ${unread} unread` : "Notifications"}
+              className={cn("relative grid place-items-center size-9 rounded-full press", path.startsWith("/notifications") ? "bg-hover" : "hover:bg-hover")}
+            >
+              <Bell className="size-[18px]" />
+              {unread ? (
+                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 grid place-items-center rounded-full bg-coral text-white text-[10.5px] font-bold tabular">
+                  {unread > 9 ? "9+" : unread}
+                </span>
+              ) : null}
+            </Link>
             <Button asChild size="sm">
               <Link href="/add">
                 <Plus className="size-3.5" /> Add

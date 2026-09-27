@@ -5,6 +5,17 @@ import { requireUser } from "@/server/auth/session";
 import { getPreferences, listReminders } from "@/server/services/reminders";
 
 export const metadata = { title: "Settings" };
+
+const PRESET_LABEL: Record<string, string> = {
+  auto_7d: "Automatic, 1 week before",
+  auto_3d: "Automatic, 3 days before",
+  auto_0d: "Automatic, on the day",
+  "1_week_before": "1 week before",
+  "3_days_before": "3 days before",
+  today: "Today",
+  tomorrow: "Tomorrow",
+  custom: "Custom",
+};
 export const dynamic = "force-dynamic";
 
 export default async function Settings() {
@@ -51,7 +62,7 @@ export default async function Settings() {
             <div key={r.id} className="flex items-center justify-between gap-4 px-4 py-3">
               <div className="min-w-0">
                 <p className="text-[14.5px] truncate">{r.actionTitle}</p>
-                <p className="text-[12.5px] text-subtle">{fmt(r.remindAt)} · {r.channels.join(" + ").replace("in_app", "in-app")}</p>
+                <p className="text-[12.5px] text-subtle">{fmt(r.remindAt)} · {PRESET_LABEL[r.preset] ?? "Reminder"} · {r.channels.join(" + ").replace("in_app", "in-app")}</p>
               </div>
               <CancelReminder id={r.id} />
             </div>
