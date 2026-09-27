@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: { default: "LIFEOS — Stop losing money to fine print", template: "%s · LIFEOS" },
+  title: { default: "LIFEOS — Forget things. We won't.", template: "%s · LIFEOS" },
   description:
     "Snap a receipt, forward an email, or type what you bought. LIFEOS finds every return window, warranty, free trial and credit, and reminds you before it costs you.",
   robots: { index: false },

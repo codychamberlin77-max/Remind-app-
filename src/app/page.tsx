@@ -49,8 +49,8 @@ export default function Landing() {
         <HeroStickersRight />
         <div className="relative mx-auto max-w-3xl px-5 pt-10 sm:pt-28 pb-20 sm:pb-32 text-center">
           <MobileStickers />
-          <h1 className="display text-[50px] sm:text-[80px] text-ink [perspective:600px]" aria-label="Stop losing money to fine print.">
-            <RiseWords lines={["Stop losing money", "to fine print."]} />
+          <h1 className="display text-[58px] sm:text-[96px] text-ink [perspective:600px]" aria-label="Forget things. We won't.">
+            <RiseWords lines={["Forget things.", "We won't."]} />
           </h1>
           <p className="mt-7 text-[18px] sm:text-[20px] leading-relaxed text-muted max-w-xl mx-auto animate-rise [animation-delay:80ms]">
             Snap a receipt, forward an email, or just type what you bought. We find every return window, warranty, free trial and credit, then remind you before it costs you.
