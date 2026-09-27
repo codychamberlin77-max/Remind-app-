@@ -19,6 +19,7 @@ export type CaseResult = {
   items: { expected: number; actual: number; ok: boolean; notes: string[] };
   evidence: { proposed: number; rejected: number };
   processingMs: number | null;
+  tokens: { input: number; output: number };
 };
 
 export type EvalReport = {
@@ -41,6 +42,7 @@ export type EvalReport = {
     calibration: Array<{ bucket: string; n: number; accuracy: number | null; meanConfidence: number | null }>;
     expectedCalibrationError: number;
     processingMs: { p50: number; p95: number; max: number };
+    tokens: { input: number; output: number };
   };
 };
 
@@ -92,6 +94,7 @@ async function runCase(c: EvalCase, manifest: Record<string, { file: string; sha
   let proposed = 0;
   let rejected = 0;
   let processingMs: number | null = null;
+  const tokens = { input: 0, output: 0 };
 
   if (res.status === "accepted" || res.status === "duplicate") {
     const documentId = res.documentId;
@@ -109,6 +112,8 @@ async function runCase(c: EvalCase, manifest: Record<string, { file: string; sha
       if (ex) {
         proposed = countProposed(ex.rawOutput);
         rejected = ex.warnings.filter((w) => REJECTION.test(w)).length;
+        tokens.input = ex.inputTokens ?? 0;
+        tokens.output = ex.outputTokens ?? 0;
       }
     });
   } else if (res.status === "rejected") {
@@ -161,6 +166,7 @@ async function runCase(c: EvalCase, manifest: Record<string, { file: string; sha
     items: { expected: c.expected.items.length, actual: items.length, ok: itemsOk, notes },
     evidence: { proposed, rejected },
     processingMs,
+    tokens,
   };
 }
 
@@ -228,6 +234,10 @@ export async function runEval(opts: { provider: string; only?: string[] }): Prom
         calibration: buckets,
         expectedCalibrationError: Math.round(ece * 1000) / 1000,
         processingMs: { p50: q(0.5), p95: q(0.95), max: times.at(-1) ?? 0 },
+        tokens: {
+          input: results.reduce((n, r) => n + r.tokens.input, 0),
+          output: results.reduce((n, r) => n + r.tokens.output, 0),
+        },
       },
     };
   } finally {
@@ -249,6 +259,7 @@ export function formatReport(r: EvalReport): string {
     `  Calibration (ECE)       ${m.expectedCalibrationError}`,
     ...m.calibration.map((b) => `      conf ${b.bucket}: n=${b.n} accuracy=${b.accuracy ?? "—"} mean=${b.meanConfidence ?? "—"}`),
     `  Processing time         p50=${m.processingMs.p50}ms p95=${m.processingMs.p95}ms max=${m.processingMs.max}ms`,
+    `  Tokens                  input=${m.tokens.input} output=${m.tokens.output} (extraction calls; transcription not counted)`,
     "",
   ];
   for (const c of r.cases) {
