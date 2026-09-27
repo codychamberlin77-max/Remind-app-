@@ -16,10 +16,10 @@ function Face({ x, y, s = 1, mood = "happy" }: { x: number; y: number; s?: numbe
           <path d="M4 -2 q4 4 8 0" stroke={INK} strokeWidth="3" fill="none" strokeLinecap="round" />
         </>
       ) : (
-        <>
+        <g className="blink" style={{ animationDelay: `${-((x * 7 + y * 3) % 50) / 10}s` }}>
           <ellipse cx="-8" cy="-2" rx="3.2" ry="4.2" fill={INK} />
           <ellipse cx="8" cy="-2" rx="3.2" ry="4.2" fill={INK} />
-        </>
+        </g>
       )}
       {mood === "wow" ? <ellipse cx="0" cy="9" rx="3.5" ry="4" fill={INK} /> : <path d="M-6 7 q6 6 12 0" stroke={INK} strokeWidth="3" fill="none" strokeLinecap="round" />}
     </g>

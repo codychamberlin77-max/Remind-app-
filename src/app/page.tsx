@@ -47,10 +47,8 @@ export default function Landing() {
         <HeroStickersRight />
         <div className="relative mx-auto max-w-3xl px-5 pt-10 sm:pt-28 pb-20 sm:pb-32 text-center">
           <MobileStickers />
-          <h1 className="display text-[54px] sm:text-[88px] text-ink animate-rise">
-            Your life has
-            <br />
-            too much admin.
+          <h1 className="display text-[54px] sm:text-[88px] text-ink [perspective:600px]" aria-label="Your life has too much admin.">
+            <RiseWords lines={["Your life has", "too much admin."]} />
           </h1>
           <p className="mt-7 text-[18px] sm:text-[20px] leading-relaxed text-muted max-w-xl mx-auto animate-rise [animation-delay:80ms]">
             Drop in receipts, emails and screenshots. We find the deadlines, warranties, trials and credits hiding inside, and remind you before they cost you.
@@ -140,8 +138,8 @@ export default function Landing() {
       {/* ── Honest by design ── */}
       <section id="honest" className="mx-auto max-w-6xl px-5 pt-24 sm:pt-32 grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
         <div className="relative rounded-[28px] bg-tile p-6 sm:p-10 min-h-[380px] grid place-items-center overflow-hidden">
-          <Coin className="absolute top-8 left-8 w-10 animate-float" />
-          <Sparkle className="absolute bottom-10 right-10 w-7 animate-float-slow" color="var(--color-grape)" />
+          <Coin className="absolute top-8 left-8 w-10" />
+          <Sparkle className="absolute bottom-10 right-10 w-7" color="var(--color-grape)" />
           <div className="relative w-full max-w-[330px] rounded-[22px] bg-surface p-5 shadow-[var(--shadow-pop)]">
             <p className="text-[13px] font-medium text-muted">We found 4 things worth knowing</p>
             <div className="mt-4 space-y-3.5">
@@ -179,8 +177,8 @@ export default function Landing() {
       {/* ── Email ── */}
       <section className="mx-auto max-w-6xl px-5 pt-24 sm:pt-32 grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
         <div className="lg:order-2 relative rounded-[28px] bg-grape p-6 sm:p-10 min-h-[340px] grid place-items-center overflow-hidden">
-          <Star className="absolute top-8 right-10 w-9 animate-float" />
-          <Heart className="absolute bottom-8 left-8 w-10 animate-float-slow" />
+          <Star className="absolute top-8 right-10 w-9" />
+          <Heart className="absolute bottom-8 left-8 w-10" />
           <div className="w-full max-w-[330px] space-y-2.5">
             {[
               ["Your Amazon.com order has shipped", "Added"],
@@ -243,10 +241,10 @@ export default function Landing() {
       {/* ── CTA ── */}
       <section className="relative mx-auto max-w-4xl px-5 py-28 sm:py-36 text-center">
         <div className="flex justify-center items-end gap-2 sm:gap-4 mb-10">
-          <ReceiptBuddy className="w-16 sm:w-20 animate-float [--tilt:-6deg]" />
-          <TrialBuddy className="w-16 sm:w-20 animate-float-slow [animation-delay:-2s]" />
-          <CreditBuddy className="w-20 sm:w-24 animate-float [animation-delay:-4s]" />
-          <ShieldBuddy className="w-16 sm:w-20 animate-float-slow [--tilt:6deg]" />
+          <ReceiptBuddy className="w-16 sm:w-20 rotate-[-6deg] spring-hover" />
+          <TrialBuddy className="w-16 sm:w-20 spring-hover" />
+          <CreditBuddy className="w-20 sm:w-24 spring-hover" />
+          <ShieldBuddy className="w-16 sm:w-20 rotate-[6deg] spring-hover" />
         </div>
         <h2 className="display text-[48px] sm:text-[80px]">What are you forgetting?</h2>
         <p className="mt-5 text-muted text-[19px]">Upload one receipt. See what we find.</p>
@@ -314,21 +312,39 @@ function KindTile({ kind, title, value, line, certainty }: { kind: keyof typeof 
   );
 }
 
+/** Words slide up into place one by one (Family-style headline reveal). */
+function RiseWords({ lines }: { lines: string[] }) {
+  let i = 0;
+  return (
+    <span aria-hidden>
+      {lines.map((line) => (
+        <span key={line} className="block overflow-hidden pb-[0.08em]">
+          {line.split(" ").map((w) => (
+            <span key={w + i} className="inline-block animate-word" style={{ animationDelay: `${60 + i++ * 70}ms` }}>
+              {w}&nbsp;
+            </span>
+          ))}
+        </span>
+      ))}
+    </span>
+  );
+}
+
 /* ── Hero sticker clusters ── */
 
 function HeroStickersLeft() {
   return (
     <div aria-hidden className="hidden lg:block absolute left-0 top-10 w-[34vw] max-w-[440px] h-[520px] pointer-events-none">
       <div className="absolute left-[8%] top-[22%] size-40 rounded-full bg-tile" />
-      <ReceiptBuddy className="absolute left-[18%] top-[18%] w-36 animate-float [--tilt:-8deg]" />
-      <Coin className="absolute left-[58%] top-[6%] w-14 animate-float-slow [--tilt:-20deg]" />
-      <Heart className="absolute left-[64%] top-[40%] w-12 animate-float [animation-delay:-1.5s]" />
-      <TrialBuddy className="absolute left-[42%] top-[62%] w-28 animate-float-slow [--tilt:8deg] [animation-delay:-3s]" />
-      <Star className="absolute left-[6%] top-[70%] w-9 animate-float [animation-delay:-2s]" />
-      <Sparkle className="absolute left-[80%] top-[20%] w-6 animate-float-slow" />
-      <Dot className="absolute left-[4%] top-[10%] size-8" color="var(--color-leaf)" />
-      <Dot className="absolute left-[30%] top-[88%] size-10" color="var(--color-coral)" />
-      <Dot className="absolute left-[82%] top-[62%] size-5" color="var(--color-blue)" />
+      <ReceiptBuddy className="absolute left-[18%] top-[18%] w-36 [--tilt:-8deg] animate-pop [animation-delay:240ms] spring-hover pointer-events-auto" />
+      <Coin className="absolute left-[58%] top-[6%] w-14 [--tilt:-20deg] animate-pop [animation-delay:330ms] spring-hover pointer-events-auto" />
+      <Heart className="absolute left-[64%] top-[40%] w-12 animate-pop [animation-delay:420ms] spring-hover pointer-events-auto" />
+      <TrialBuddy className="absolute left-[42%] top-[62%] w-28 [--tilt:8deg] animate-pop [animation-delay:510ms] spring-hover pointer-events-auto" />
+      <Star className="absolute left-[6%] top-[70%] w-9 animate-pop [animation-delay:600ms] spring-hover pointer-events-auto" />
+      <Sparkle className="absolute left-[80%] top-[20%] w-6 animate-pop [animation-delay:690ms] spring-hover pointer-events-auto" />
+      <Dot className="absolute left-[4%] top-[10%] size-8 animate-pop [animation-delay:780ms]" color="var(--color-leaf)" />
+      <Dot className="absolute left-[30%] top-[88%] size-10 animate-pop [animation-delay:870ms]" color="var(--color-coral)" />
+      <Dot className="absolute left-[82%] top-[62%] size-5 animate-pop [animation-delay:960ms]" color="var(--color-blue)" />
     </div>
   );
 }
@@ -337,14 +353,14 @@ function HeroStickersRight() {
   return (
     <div aria-hidden className="hidden lg:block absolute right-0 top-10 w-[34vw] max-w-[440px] h-[520px] pointer-events-none">
       <div className="absolute right-[12%] top-[30%] size-44 rounded-full bg-tile" />
-      <CreditBuddy className="absolute right-[14%] top-[26%] w-40 animate-float [--tilt:6deg] [animation-delay:-2.5s]" />
-      <CheckBubble className="absolute right-[62%] top-[8%] w-14 animate-float-slow" />
-      <ShieldBuddy className="absolute right-[52%] top-[56%] w-28 animate-float [--tilt:-6deg] [animation-delay:-1s]" />
-      <Star className="absolute right-[10%] top-[6%] w-10 animate-float-slow [animation-delay:-3s]" color="var(--color-coral)" />
-      <Coin className="absolute right-[6%] top-[76%] w-12 animate-float [--tilt:15deg]" />
-      <Sparkle className="absolute right-[40%] top-[22%] w-7 animate-float" color="var(--color-sun)" />
-      <Dot className="absolute right-[4%] top-[48%] size-7" color="var(--color-grape)" />
-      <Dot className="absolute right-[78%] top-[86%] size-6" color="var(--color-sun)" />
+      <CreditBuddy className="absolute right-[14%] top-[26%] w-40 [--tilt:6deg] animate-pop [animation-delay:290ms] spring-hover pointer-events-auto" />
+      <CheckBubble className="absolute right-[62%] top-[8%] w-14 animate-pop [animation-delay:380ms] spring-hover pointer-events-auto" />
+      <ShieldBuddy className="absolute right-[52%] top-[56%] w-28 [--tilt:-6deg] animate-pop [animation-delay:470ms] spring-hover pointer-events-auto" />
+      <Star className="absolute right-[10%] top-[6%] w-10 animate-pop [animation-delay:560ms] spring-hover pointer-events-auto" color="var(--color-coral)" />
+      <Coin className="absolute right-[6%] top-[76%] w-12 [--tilt:15deg] animate-pop [animation-delay:650ms] spring-hover pointer-events-auto" />
+      <Sparkle className="absolute right-[40%] top-[22%] w-7 animate-pop [animation-delay:740ms] spring-hover pointer-events-auto" color="var(--color-sun)" />
+      <Dot className="absolute right-[4%] top-[48%] size-7 animate-pop [animation-delay:830ms]" color="var(--color-grape)" />
+      <Dot className="absolute right-[78%] top-[86%] size-6 animate-pop [animation-delay:920ms]" color="var(--color-sun)" />
     </div>
   );
 }
