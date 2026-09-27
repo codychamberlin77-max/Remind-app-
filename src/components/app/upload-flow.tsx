@@ -201,7 +201,7 @@ export function UploadFlow({ welcome }: { welcome: boolean }) {
       <h1 className="display-2 text-[36px] sm:text-[48px]">
         {welcome ? "Let's find what you're forgetting." : "Add something new."}
       </h1>
-      <p className="text-muted mt-2.5 text-[16px]">Upload a receipt, document, screenshot, or PDF.</p>
+      <p className="text-muted mt-2.5 text-[16px]">Drop in a receipt, screenshot, PDF or photo. We&apos;ll take it from there.</p>
 
       <div
         onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
