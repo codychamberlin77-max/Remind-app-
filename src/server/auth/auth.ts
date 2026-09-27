@@ -29,6 +29,8 @@ function build() {
       database: { generateId: "uuid" },
       cookiePrefix: "lifeos",
       useSecureCookies: e.NODE_ENV === "production",
+      // Railway (and most proxies) forward the client address here; used for auth rate limiting.
+      ipAddress: { ipAddressHeaders: ["x-forwarded-for", "x-real-ip"] },
     },
     emailAndPassword: {
       enabled: true,

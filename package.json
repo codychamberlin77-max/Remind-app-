@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start -p ${PORT:-3000}",
+    "start": "tsx scripts/migrate.ts --if-configured && next start -p ${PORT:-3000}",
     "worker": "tsx --tsconfig tsconfig.json src/server/jobs/worker.ts",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",

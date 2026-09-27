@@ -4,6 +4,10 @@
  *  - installs the pg-boss schema and queues, and grants the app role access
  *
  * Usage: DATABASE_ADMIN_URL=… [APP_DB_PASSWORD=…] npm run db:migrate
+ *
+ * `--if-configured` (used by `npm start`) skips quietly when DATABASE_ADMIN_URL
+ * is absent, so the web server brings its own database up to date on every boot
+ * regardless of hosting-platform pre-deploy settings. Everything here is idempotent.
  */
 import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
@@ -13,7 +17,13 @@ import { QUEUES } from "../src/server/jobs/queues";
 
 async function main() {
   const url = process.env.DATABASE_ADMIN_URL;
-  if (!url) throw new Error("DATABASE_ADMIN_URL is required");
+  if (!url) {
+    if (process.argv.includes("--if-configured")) {
+      console.log("[migrate] DATABASE_ADMIN_URL not set; skipping");
+      return;
+    }
+    throw new Error("DATABASE_ADMIN_URL is required");
+  }
   const pool = new pg.Pool({ connectionString: url, max: 2 });
   await migrate(drizzle(pool), { migrationsFolder: "src/server/db/migrations" });
 
