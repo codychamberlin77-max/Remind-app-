@@ -330,6 +330,7 @@ export default function Landing() {
           <Logo />
           <div className="flex gap-6">
             <Link href="/privacy" className="hover:text-ink">Privacy</Link>
+            <Link href="/terms" className="hover:text-ink">Terms</Link>
             <span className="inline-flex items-center gap-1.5"><Trash2 className="size-3.5" /> Delete anytime</span>
           </div>
         </div>

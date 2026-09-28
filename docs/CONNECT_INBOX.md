@@ -28,6 +28,14 @@ https://remind-app-production.up.railway.app/api/connections/outlook/callback
 - Only listed test users can connect, and Google shows an "unverified app" screen they click through.
 - Access for apps in testing expires after about 7 days. The app then shows "Reconnect".
 
+**App pages Google asks for:**
+
+- **Homepage:** `https://<your domain>/`
+- **Privacy policy:** `https://<your domain>/privacy` (it includes Google's "Limited Use" statement)
+- **Terms:** `https://<your domain>/terms`
+
+Set `LEGAL_ENTITY_NAME` and `CONTACT_EMAIL` in Railway so those pages show your business name and contact email.
+
 **Going public:**
 - Publish the app and submit it for Google verification. Gmail read access is a restricted scope, so this requires:
   - a privacy policy and homepage on your own domain

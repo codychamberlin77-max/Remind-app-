@@ -103,6 +103,11 @@ export function AuthForm({ mode, googleEnabled }: { mode: "sign-in" | "sign-up";
           <>New here? <Link href="/sign-up" className="text-ink font-medium">Create an account</Link></>
         )}
       </p>
+      {signUp ? (
+        <p className="mt-4 text-[12.5px] text-subtle text-center">
+          By creating an account you agree to our <Link href="/terms" className="underline">Terms</Link> and <Link href="/privacy" className="underline">Privacy Policy</Link>.
+        </p>
+      ) : null}
     </div>
   );
 }

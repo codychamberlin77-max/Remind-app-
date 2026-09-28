@@ -87,6 +87,9 @@ export default async function Settings() {
       <section>
         <SectionTitle>Your data</SectionTitle>
         <Card className="p-5"><DangerZone /></Card>
+        <p className="mt-3 px-1 text-[13px] text-subtle">
+          <Link href="/privacy" className="underline">Privacy Policy</Link> · <Link href="/terms" className="underline">Terms of Service</Link>
+        </p>
       </section>
     </div>
   );

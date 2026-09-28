@@ -149,7 +149,7 @@ export function InboxConnections({
 
         <p className="flex gap-2 text-[12.5px] text-subtle">
           <ShieldCheck className="size-4 shrink-0 text-leaf" />
-          Read-only. We only open emails that look like receipts, orders, trials, bills or warranties, and we never send, delete or change anything. Disconnect anytime.
+          <span>Read-only. We only open emails that look like receipts, orders, trials, bills or warranties, and we never send, delete or change anything. Disconnect anytime. <a href="/privacy#s4" className="underline">How we handle your email</a></span>
         </p>
       </Card>
     </section>

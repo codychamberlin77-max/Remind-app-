@@ -69,6 +69,9 @@ const schema = z.object({
   INBOUND_EMAIL_SECRET: z.string().optional(),
   // Past-email import (Google Takeout .mbox / .zip).
   MAX_IMPORT_BYTES: z.coerce.number().int().positive().default(1024 * 1024 * 1024),
+  // Shown on the Privacy Policy and Terms pages.
+  LEGAL_ENTITY_NAME: z.string().default("LIFEOS"),
+  CONTACT_EMAIL: z.string().optional(),
   // "Connect Gmail / Outlook" (read-only inbox access). Gmail falls back to the Google sign-in client.
   GMAIL_CLIENT_ID: z.string().optional(),
   GMAIL_CLIENT_SECRET: z.string().optional(),

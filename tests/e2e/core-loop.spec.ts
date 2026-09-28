@@ -2,8 +2,9 @@ import { expect, test } from "@playwright/test";
 import { buildSample } from "../../src/server/samples";
 import { signUp, waitForReveal } from "./helpers";
 
-function todayNY() {
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York" }).format(new Date());
+/** "Today" in the browser's timezone, which is the timezone the test user signs up with. */
+function todayForUser() {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone }).format(new Date());
 }
 
 /**
@@ -16,7 +17,7 @@ test("upload → understand → act → remind → correct → complete → dele
   await expect(page.getByRole("heading", { name: "Let's find what you're forgetting." })).toBeVisible();
 
   // Upload a real PDF receipt through the file picker.
-  const receipt = await buildSample("receipt", todayNY());
+  const receipt = await buildSample("receipt", todayForUser());
   await page.locator('input[type="file"]').first().setInputFiles({ name: "my-receipt.pdf", mimeType: "application/pdf", buffer: receipt.bytes });
   await waitForReveal(page);
 
