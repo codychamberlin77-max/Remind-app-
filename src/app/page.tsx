@@ -95,7 +95,7 @@ export default function Landing() {
                 ["Fwd: Your order #112-4471", "var(--color-grape)"],
                 ["IMG_4821.jpg", "var(--color-coral)"],
               ].map(([f, c], i) => (
-                <div key={f} className="flex items-center gap-3 h-12 px-4 rounded-2xl bg-surface shadow-[var(--shadow-card)] text-[13.5px] font-medium" style={{ transform: `rotate(${[-2, 1.5, -1][i]}deg)` }}>
+                <div key={f} className="flex items-center gap-3 h-12 px-4 rounded-2xl bg-surface shadow-[var(--shadow-card)] text-[13.5px] font-medium">
                   <Dot className="size-3" color={c!} />
                   <span className="truncate">{f}</span>
                 </div>
@@ -104,9 +104,9 @@ export default function Landing() {
           </Bento>
           <Bento step={2} title="We read the fine print" body="Dates, amounts, return windows, warranties. Every one checked against the document itself.">
             <div className="w-full max-w-[250px] rounded-2xl bg-surface shadow-[var(--shadow-card)] p-4 space-y-3">
-              <FactRow label="Purchased" value="Sep 22" certainty="confirmed" />
-              <FactRow label="Return by" value="Oct 6" certainty="estimated" />
-              <FactRow label="Serial no." value="—" certainty="unknown" />
+              <FactRow stacked label="Purchased" value="Sep 22" certainty="confirmed" />
+              <FactRow stacked label="Return by" value="Oct 6" certainty="estimated" />
+              <FactRow stacked label="Serial no." value="—" certainty="unknown" />
             </div>
           </Bento>
           <Bento step={3} title="We fill the gaps" body="Receipt doesn't say? We look up the store's actual policy and show you exactly where it came from.">
@@ -122,7 +122,7 @@ export default function Landing() {
             </div>
           </Bento>
           <Bento step={4} title="You get a heads-up" body="1 week, 3 days and the day of. Handled it? Tap done and we go quiet.">
-            <div className="w-full max-w-[250px] rounded-2xl bg-ink text-white p-4 shadow-[var(--shadow-pop)] rotate-[-2deg]">
+            <div className="w-full max-w-[250px] rounded-2xl bg-ink text-white p-4 shadow-[var(--shadow-pop)]">
               <div className="flex items-center gap-2 text-[12px] text-white/60">
                 <span className="grid place-items-center size-5 rounded-md bg-coral text-[10px] font-bold">!</span> LIFEOS · now
               </div>
@@ -252,11 +252,11 @@ export default function Landing() {
           <CheckBubble className="absolute bottom-8 left-8 w-12" />
           <div className="w-full max-w-[330px] space-y-2.5">
             {[
-              ["In 1 week", "Return window · Samsung 65″ TV", "-rotate-2"],
-              ["In 3 days", "Free trial ends · StreamMax", "rotate-1"],
-              ["Today", "Use your $431 Delta eCredit", "-rotate-1"],
-            ].map(([when, what, tilt]) => (
-              <div key={when} className={cn("rounded-2xl bg-ink text-white px-4 py-3 shadow-[var(--shadow-pop)]", tilt)}>
+              ["In 1 week", "Return window · Samsung 65″ TV"],
+              ["In 3 days", "Free trial ends · StreamMax"],
+              ["Today", "Use your $431 Delta eCredit"],
+            ].map(([when, what]) => (
+              <div key={when} className="rounded-2xl bg-ink text-white px-4 py-3 shadow-[var(--shadow-pop)]">
                 <p className="flex items-center gap-2 text-[11.5px] text-white/55">
                   <span className="grid place-items-center size-4 rounded bg-coral text-[9px] font-bold text-white">!</span> LIFEOS
                 </p>
@@ -352,7 +352,19 @@ function Bento({ step, title, body, children }: { step: number; title: string; b
   );
 }
 
-function FactRow({ label, value, certainty }: { label: string; value: string; certainty: "confirmed" | "estimated" | "unknown" }) {
+function FactRow({ label, value, certainty, stacked }: { label: string; value: string; certainty: "confirmed" | "estimated" | "unknown"; stacked?: boolean }) {
+  if (stacked) {
+    // Narrow cards: label on its own line so nothing gets cut off.
+    return (
+      <div>
+        <p className="text-[12.5px] text-muted">{label}</p>
+        <div className="mt-0.5 flex items-center justify-between gap-2">
+          <span className="text-[14.5px] font-semibold tabular">{value}</span>
+          <CertaintyBadge certainty={certainty} />
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="flex items-center justify-between gap-3">
       <span className="text-[13.5px] text-muted truncate">{label}</span>
