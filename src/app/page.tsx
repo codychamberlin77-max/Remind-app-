@@ -116,7 +116,7 @@ export default function Landing() {
                 <span className="font-display text-[22px] font-semibold tracking-[-0.03em]">90 days</span>
                 <CertaintyBadge certainty="estimated" />
               </div>
-              <p className="mt-2 inline-flex items-center gap-1 text-[12.5px] font-semibold text-blue">
+              <p className="mt-2 inline-flex items-center gap-1 text-[12.5px] font-semibold text-blue-ink">
                 From target.com <ArrowUpRight className="size-3.5" />
               </p>
             </div>
@@ -135,7 +135,7 @@ export default function Landing() {
 
       {/* ── The four things (colored tiles) ── */}
       <section className="mx-auto max-w-6xl px-5 pt-24 sm:pt-32">
-        <p className="text-[15px] font-semibold text-coral">What we catch</p>
+        <p className="text-[15px] font-semibold text-coral-ink">What we catch</p>
         <h2 className="mt-2 display-2 text-[40px] sm:text-[56px] max-w-3xl">
           Money you already spent.
           <br />
@@ -151,7 +151,7 @@ export default function Landing() {
 
       {/* ── Lost receipt ── */}
       <section className="mx-auto max-w-6xl px-5 pt-24 sm:pt-32 grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
-        <div className="lg:order-2 relative rounded-[28px] bg-coral p-6 sm:p-10 min-h-[360px] grid place-items-center overflow-hidden">
+        <div className="lg:order-2 relative rounded-[28px] bg-coral brut p-6 sm:p-10 min-h-[360px] grid place-items-center overflow-hidden">
           <Sparkle className="absolute top-8 left-9 w-7" color="#fff" />
           <Coin className="absolute bottom-8 right-8 w-11" />
           <div className="w-full max-w-[330px] space-y-3">
@@ -168,7 +168,7 @@ export default function Landing() {
           </div>
         </div>
         <div>
-          <p className="text-[15px] font-semibold text-coral">Lost the receipt?</p>
+          <p className="text-[15px] font-semibold text-coral-ink">Lost the receipt?</p>
           <h2 className="mt-2 display-2 text-[40px] sm:text-[52px]">No receipt. No problem.</h2>
           <p className="mt-5 text-[18px] text-muted leading-relaxed">
             Just tell us what you bought and where. We pull the store&apos;s return policy and the manufacturer&apos;s warranty straight from their websites, and show you how to get a copy of the receipt.
@@ -189,13 +189,13 @@ export default function Landing() {
               <FactRow label="Geek Squad plan" value="2 years" certainty="confirmed" />
               <div className="pt-3.5 border-t border-line flex items-center justify-between">
                 <span className="text-[13.5px] text-muted">Money protected</span>
-                <span className="font-display text-[20px] font-semibold text-leaf tabular">$1,611.33</span>
+                <span className="font-display text-[20px] font-semibold text-leaf-ink tabular">$1,611.33</span>
               </div>
             </div>
           </div>
         </div>
         <div>
-          <p className="text-[15px] font-semibold text-blue">Honest by design</p>
+          <p className="text-[15px] font-semibold text-blue-ink">Honest by design</p>
           <h2 className="mt-2 display-2 text-[40px] sm:text-[52px]">We tell you when we&apos;re not sure.</h2>
           <p className="mt-5 text-[18px] text-muted leading-relaxed">
             A wrong deadline is worse than none. Every date and amount gets a label, and when we&apos;re estimating, we tell you why and show the source.
@@ -217,7 +217,7 @@ export default function Landing() {
 
       {/* ── Email ── */}
       <section className="mx-auto max-w-6xl px-5 pt-24 sm:pt-32 grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
-        <div className="lg:order-2 relative rounded-[28px] bg-grape p-6 sm:p-10 min-h-[340px] grid place-items-center overflow-hidden">
+        <div className="lg:order-2 relative rounded-[28px] bg-grape brut p-6 sm:p-10 min-h-[340px] grid place-items-center overflow-hidden">
           <Star className="absolute top-8 right-10 w-9" />
           <Heart className="absolute bottom-8 left-8 w-10" />
           <div className="w-full max-w-[330px] space-y-2.5">
@@ -231,13 +231,13 @@ export default function Landing() {
                   <Mail className="size-4 text-muted shrink-0" />
                   <span className="truncate">{s}</span>
                 </span>
-                <span className={cn("text-[12px] font-semibold shrink-0", st === "Added" ? "text-leaf" : "text-subtle")}>{st}</span>
+                <span className={cn("text-[12px] font-semibold shrink-0", st === "Added" ? "text-leaf-ink" : "text-subtle")}>{st}</span>
               </div>
             ))}
           </div>
         </div>
         <div>
-          <p className="text-[15px] font-semibold text-grape">Works with your inbox</p>
+          <p className="text-[15px] font-semibold text-grape-ink">Works with your inbox</p>
           <h2 className="mt-2 display-2 text-[40px] sm:text-[52px]">Forward it. Forget it.</h2>
           <p className="mt-5 text-[18px] text-muted leading-relaxed">
             Get your own private LIFEOS address. Set one filter and receipts, trials and order emails roll in on their own. Newsletters get ignored. Sitting on years of old email? Import it from Gmail, Outlook, Apple Mail or Thunderbird in one go.
@@ -247,7 +247,7 @@ export default function Landing() {
 
       {/* ── Reminders ── */}
       <section id="reminders" className="mx-auto max-w-6xl px-5 pt-24 sm:pt-32 grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
-        <div className="relative rounded-[28px] bg-leaf p-6 sm:p-10 min-h-[360px] grid place-items-center overflow-hidden">
+        <div className="relative rounded-[28px] bg-leaf brut p-6 sm:p-10 min-h-[360px] grid place-items-center overflow-hidden">
           <Star className="absolute top-8 right-9 w-9" />
           <CheckBubble className="absolute bottom-8 left-8 w-12" />
           <div className="w-full max-w-[330px] space-y-2.5">
@@ -258,7 +258,7 @@ export default function Landing() {
             ].map(([when, what]) => (
               <div key={when} className="rounded-2xl bg-ink text-white px-4 py-3 shadow-[var(--shadow-pop)]">
                 <p className="flex items-center gap-2 text-[11.5px] text-white/55">
-                  <span className="grid place-items-center size-4 rounded bg-coral text-[9px] font-bold text-white">!</span> LIFEOS
+                  <span className="grid place-items-center size-4 rounded bg-coral text-[9px] font-bold text-ink">!</span> LIFEOS
                 </p>
                 <p className="mt-1 text-[14px] font-semibold">{when}: {what}</p>
               </div>
@@ -266,7 +266,7 @@ export default function Landing() {
           </div>
         </div>
         <div>
-          <p className="text-[15px] font-semibold text-leaf">Reminders</p>
+          <p className="text-[15px] font-semibold text-leaf-ink">Reminders</p>
           <h2 className="mt-2 display-2 text-[40px] sm:text-[52px]">We nag, so you don&apos;t have to.</h2>
           <p className="mt-5 text-[18px] text-muted leading-relaxed">
             1 week before. 3 days before. The day of. Every deadline gets a heads-up in the app and by email, at the time you pick. Handled it early? Tap done and we go quiet.
@@ -293,7 +293,7 @@ export default function Landing() {
             ].map(([t, d]) => (
               <li key={t} className="flex gap-4">
                 <span className="grid place-items-center size-7 rounded-full bg-leaf shrink-0 mt-0.5">
-                  <Check className="size-4 text-white" strokeWidth={3} />
+                  <Check className="size-4 text-ink" strokeWidth={3} />
                 </span>
                 <div>
                   <p className="font-semibold text-[16px]">{t}</p>
@@ -379,13 +379,13 @@ function FactRow({ label, value, certainty, stacked }: { label: string; value: s
 function KindTile({ kind, title, value, line, certainty }: { kind: keyof typeof KIND_STYLE; title: string; value: string; line: string; certainty: "confirmed" | "estimated" }) {
   const k = KIND_STYLE[kind];
   return (
-    <div className={cn("group relative rounded-[26px] p-5 text-white min-h-[300px] flex flex-col overflow-hidden press", k.bg)}>
+    <div className={cn("group relative rounded-[26px] p-5 text-ink min-h-[300px] flex flex-col overflow-hidden press brut", k.bg)}>
       <p className="font-display text-[22px] font-semibold tracking-[-0.02em]">{title}</p>
       <div className="relative my-auto mx-auto grid place-items-center size-40">
-        <span className="absolute inset-3 rounded-full bg-white" />
+        <span className="absolute inset-3 rounded-full bg-white/70" />
         <k.Sticker className="relative w-28 transition-transform duration-300 group-hover:-translate-y-1.5 group-hover:rotate-[-5deg]" />
       </div>
-      <div className="rounded-2xl bg-white/95 text-ink p-3.5">
+      <div className="rounded-2xl bg-white text-ink p-3.5 border-2 border-ink">
         <div className="flex items-center justify-between gap-2">
           <span className="font-display text-[19px] font-semibold tabular tracking-[-0.02em]">{value}</span>
           <CertaintyBadge certainty={certainty} />

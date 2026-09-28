@@ -103,7 +103,7 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
 
       {item.details.manual ? (
         <Card className="p-4 flex gap-3 text-[14px] text-ink-2">
-          <Receipt className="size-4 mt-0.5 shrink-0 text-grape" />
+          <Receipt className="size-4 mt-0.5 shrink-0 text-grape-ink" />
           <span><span className="font-semibold">No receipt? </span>{receiptRecoveryTip(item.merchant)}</span>
         </Card>
       ) : null}
@@ -147,7 +147,7 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
                   </p>
                 ) : null}
                 {f.sourceUrl ? (
-                  <a href={f.sourceUrl} target="_blank" rel="noopener noreferrer nofollow" className="mt-1.5 inline-flex items-center gap-1 text-[12.5px] font-medium text-blue hover:underline">
+                  <a href={f.sourceUrl} target="_blank" rel="noopener noreferrer nofollow" className="mt-1.5 inline-flex items-center gap-1 text-[12.5px] font-medium text-blue-ink hover:underline">
                     View the policy <ExternalLink className="size-3" />
                   </a>
                 ) : null}

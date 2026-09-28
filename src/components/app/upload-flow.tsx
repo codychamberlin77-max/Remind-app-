@@ -209,10 +209,10 @@ export function UploadFlow({ welcome }: { welcome: boolean }) {
         onDrop={(e) => { e.preventDefault(); setDragging(false); void uploadFiles(e.dataTransfer.files); }}
         className={cn(
           "mt-8 rounded-[28px] border-2 border-dashed px-6 py-12 sm:py-16 text-center transition-colors",
-          dragging ? "border-blue bg-blue-soft" : "border-line-strong bg-tile",
+          dragging ? "border-blue-ink bg-blue-soft" : "border-line-strong bg-tile",
         )}
       >
-        <span className="mx-auto grid place-items-center size-14 rounded-[18px] bg-blue text-white rotate-[-6deg]">
+        <span className="mx-auto grid place-items-center size-14 rounded-[18px] bg-blue text-ink rotate-[-6deg]">
           <FileUp className="size-6" strokeWidth={2.2} />
         </span>
         <p className="mt-5 font-display font-semibold text-[20px] tracking-[-0.02em]">Drop files here</p>
@@ -242,12 +242,12 @@ export function UploadFlow({ welcome }: { welcome: boolean }) {
         <span className="grid place-items-center size-10 rounded-full bg-ink text-white shrink-0"><ArrowRight className="size-4" /></span>
       </Link>
 
-      <Link href="/email" className="mt-3 flex items-center justify-between gap-3 p-5 rounded-[22px] bg-grape text-white press">
+      <Link href="/email" className="mt-3 flex items-center justify-between gap-3 p-5 rounded-[22px] bg-grape text-ink press brut">
         <span>
           <span className="block font-display text-[18px] font-semibold tracking-[-0.02em]">Most of this is in your email</span>
-          <span className="block text-[13.5px] text-white/75 mt-0.5">Forward receipts and trials automatically, or import past email.</span>
+          <span className="block text-[13.5px] text-ink/65 mt-0.5">Forward receipts and trials automatically, or import past email.</span>
         </span>
-        <span className="grid place-items-center size-10 rounded-full bg-white text-grape shrink-0"><ArrowRight className="size-4" /></span>
+        <span className="grid place-items-center size-10 rounded-full bg-white text-grape-ink shrink-0"><ArrowRight className="size-4" /></span>
       </Link>
 
       <div className="mt-12">
@@ -255,13 +255,13 @@ export function UploadFlow({ welcome }: { welcome: boolean }) {
         <p className="text-[13px] text-subtle px-1 mt-0.5">Samples are processed on our servers only. Nothing is sent to an AI provider.</p>
         <div className="mt-3 grid sm:grid-cols-3 gap-2.5">
           {SAMPLES.map((s) => (
-            <button key={s.id} onClick={() => trySample(s.id, s.title)} className={cn("group text-left p-4 rounded-[22px] text-white press overflow-hidden", s.tone)}>
+            <button key={s.id} onClick={() => trySample(s.id, s.title)} className={cn("group text-left p-4 rounded-[22px] text-ink press overflow-hidden brut", s.tone)}>
               <span className="relative grid place-items-center h-28">
-                <span className="absolute size-24 rounded-full bg-white" />
+                <span className="absolute size-24 rounded-full bg-white/70" />
                 <s.Sticker className="relative w-[72px] transition-transform duration-300 group-hover:-translate-y-1 group-hover:rotate-[-5deg]" />
               </span>
               <p className="mt-2 font-display text-[17px] font-semibold tracking-[-0.02em]">{s.title}</p>
-              <p className="text-[13px] text-white/75">{s.sub}</p>
+              <p className="text-[13px] text-ink/65">{s.sub}</p>
             </button>
           ))}
         </div>
@@ -343,11 +343,11 @@ function DiscoveryCard({ d, delay }: { d: Discovery; delay: number }) {
 
   if (d.kind === "money") {
     return (
-      <Card className="p-5 animate-rise bg-leaf text-white" style={{ animationDelay: `${delay}ms` }}>
+      <Card className="p-5 animate-rise bg-leaf text-ink brut" style={{ animationDelay: `${delay}ms` }}>
         <div className="flex items-center justify-between gap-4">
           <div>
             <p className="text-[13.5px] font-semibold">{d.label}</p>
-            <p className="text-[12.5px] text-white/80 mt-1 max-w-sm leading-relaxed flex gap-1.5"><Info className="size-3.5 mt-0.5 shrink-0" />{d.detail}</p>
+            <p className="text-[12.5px] text-ink/70 mt-1 max-w-sm leading-relaxed flex gap-1.5"><Info className="size-3.5 mt-0.5 shrink-0" />{d.detail}</p>
           </div>
           <p className="font-display text-[34px] font-semibold tracking-[-0.035em] tabular">{d.value}</p>
         </div>

@@ -17,7 +17,7 @@ export function PolicyPending({ merchant, brand }: { merchant?: string; brand?: 
   const what = [merchant ? `${merchant}'s return policy` : null, brand ? `${brand}'s warranty` : null].filter(Boolean).join(" and ");
   return (
     <div className="flex items-center gap-3 rounded-[var(--radius-card)] bg-blue-soft px-4 py-3.5 text-[14px] text-ink-2">
-      <Loader2 className="size-4 animate-spin text-blue shrink-0" />
+      <Loader2 className="size-4 animate-spin text-blue-ink shrink-0" />
       <span>Looking up {what || "the store's policies"}…</span>
     </div>
   );

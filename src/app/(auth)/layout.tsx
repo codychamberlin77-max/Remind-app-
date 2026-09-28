@@ -21,7 +21,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           </div>
         </main>
       </div>
-      <aside aria-hidden className="hidden lg:block relative m-3 rounded-[32px] bg-sun overflow-hidden">
+      <aside aria-hidden className="hidden lg:block relative m-4 mr-5 mb-5 rounded-[32px] bg-sun overflow-hidden brut">
         <div className="absolute inset-0 grid place-items-center">
           <div className="relative w-[420px] h-[420px]">
             <div className="absolute inset-10 rounded-full bg-white/35" />

@@ -42,7 +42,7 @@ export function AppNav({ name, unread = 0 }: { name: string; unread?: number }) 
             >
               <Bell className="size-[18px]" />
               {unread ? (
-                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 grid place-items-center rounded-full bg-coral text-white text-[10.5px] font-bold tabular">
+                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 grid place-items-center rounded-full bg-coral text-ink text-[10.5px] font-bold tabular">
                   {unread > 9 ? "9+" : unread}
                 </span>
               ) : null}

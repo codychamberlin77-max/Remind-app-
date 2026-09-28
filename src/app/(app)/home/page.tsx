@@ -35,14 +35,14 @@ export default async function Home() {
         </h1>
 
         <div className="mt-6 grid grid-cols-2 gap-3">
-          <div className="relative overflow-hidden rounded-[var(--radius-card)] bg-leaf text-white p-4 sm:p-5">
+          <div className="relative overflow-hidden rounded-[var(--radius-card)] bg-leaf text-ink p-4 sm:p-5 brut">
             <Coin className="absolute -right-3 -top-3 w-16 sm:w-20 rotate-12 opacity-95" />
-            <p className="relative text-[12.5px] sm:text-[13.5px] font-medium text-white/85 flex items-center gap-1.5">
+            <p className="relative text-[12.5px] sm:text-[13.5px] font-medium text-ink/75 flex items-center gap-1.5">
               Money protected
-              <span title="The value of purchases and credits with an open return window, warranty, or expiry that we're tracking. This is not money saved." className="cursor-help"><Info className="size-3.5 text-white/70" /></span>
+              <span title="The value of purchases and credits with an open return window, warranty, or expiry that we're tracking. This is not money saved." className="cursor-help"><Info className="size-3.5 text-ink/60" /></span>
             </p>
             <p className="relative mt-1 font-display text-[26px] sm:text-[34px] font-semibold tracking-[-0.035em] tabular">{formatMoney(d.money.protectedCents, d.money.currency)}</p>
-            <p className="relative text-[12px] sm:text-[13px] text-white/75">{d.money.itemCount} {d.money.itemCount === 1 ? "item" : "items"} with an open window</p>
+            <p className="relative text-[12px] sm:text-[13px] text-ink/65">{d.money.itemCount} {d.money.itemCount === 1 ? "item" : "items"} with an open window</p>
           </div>
           <Card className="p-4 sm:p-5">
             {d.money.savedCents > 0 ? (

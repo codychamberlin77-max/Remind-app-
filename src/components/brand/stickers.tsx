@@ -1,151 +1,148 @@
 import { cn } from "@/lib/cn";
 
 /**
- * Playful sticker characters (hand-drawn SVG, no external assets).
- * Each one is a thing LIFEOS keeps track of, with a face and little legs.
+ * LIFEOS stickers: the things we keep track of, drawn as bold printed stickers
+ * (ink outline + hard offset shadow, rosy cheeks, no limbs). Hand-drawn SVG,
+ * no external assets. Only the eyes animate (a blink).
  */
 
-const INK = "#1c1b1a";
-
-function Face({ x, y, s = 1, mood = "happy" }: { x: number; y: number; s?: number; mood?: "happy" | "calm" | "wow" }) {
-  return (
-    <g transform={`translate(${x} ${y}) scale(${s})`}>
-      {mood === "calm" ? (
-        <>
-          <path d="M-12 -2 q4 4 8 0" stroke={INK} strokeWidth="3" fill="none" strokeLinecap="round" />
-          <path d="M4 -2 q4 4 8 0" stroke={INK} strokeWidth="3" fill="none" strokeLinecap="round" />
-        </>
-      ) : (
-        <g className="blink" style={{ animationDelay: `${-((x * 7 + y * 3) % 50) / 10}s` }}>
-          <ellipse cx="-8" cy="-2" rx="3.2" ry="4.2" fill={INK} />
-          <ellipse cx="8" cy="-2" rx="3.2" ry="4.2" fill={INK} />
-        </g>
-      )}
-      {mood === "wow" ? <ellipse cx="0" cy="9" rx="3.5" ry="4" fill={INK} /> : <path d="M-6 7 q6 6 12 0" stroke={INK} strokeWidth="3" fill="none" strokeLinecap="round" />}
-    </g>
-  );
-}
-
-function Legs({ x, y, gap = 22, color = "#ffc233" }: { x: number; y: number; gap?: number; color?: string }) {
-  return (
-    <g stroke={INK} strokeWidth="4.5" strokeLinecap="round" fill="none">
-      <path d={`M${x - gap / 2} ${y} l-3 16`} />
-      <path d={`M${x + gap / 2} ${y} l4 15`} />
-      <path d={`M${x - gap / 2 - 3} ${y + 16} l-7 1`} stroke={color} strokeWidth="6" />
-      <path d={`M${x + gap / 2 + 4} ${y + 15} l7 0`} stroke={color} strokeWidth="6" />
-    </g>
-  );
-}
+const INK = "#141414";
+const SW = 3.5; // outline width
+const SHADOW = 5; // hard shadow offset
 
 type StickerProps = { className?: string; style?: React.CSSProperties };
 
-export function ReceiptBuddy({ className, style }: StickerProps) {
+/** Draws `d` twice: an ink shadow offset down-right, then the filled, outlined shape. */
+function Shape({ d, fill }: { d: string; fill: string }) {
   return (
-    <svg viewBox="0 0 120 140" className={cn("w-28", className)} style={style} aria-hidden>
-      <Legs x={60} y={112} color="#ffc233" />
-      <path d="M22 14 q0-8 8-8 h60 q8 0 8 8 v96 l-8 -6 -8 6 -8 -6 -8 6 -8 -6 -8 6 -8 -6 -8 6 -8 -6 -8 6z" fill="var(--color-blue)" />
-      <rect x="36" y="64" width="48" height="5" rx="2.5" fill="#fff" opacity=".55" />
-      <rect x="36" y="76" width="32" height="5" rx="2.5" fill="#fff" opacity=".55" />
-      <rect x="36" y="88" width="40" height="5" rx="2.5" fill="#fff" opacity=".55" />
-      <Face x={60} y={40} />
-      <path d="M22 50 q-14 4 -16 18" stroke={INK} strokeWidth="4.5" fill="none" strokeLinecap="round" />
-      <path d="M98 48 q14 -6 18 -20" stroke={INK} strokeWidth="4.5" fill="none" strokeLinecap="round" />
+    <>
+      <path d={d} fill={INK} transform={`translate(${SHADOW} ${SHADOW})`} />
+      <path d={d} fill={fill} stroke={INK} strokeWidth={SW} strokeLinejoin="round" />
+    </>
+  );
+}
+
+function Face({ x, y, s = 1 }: { x: number; y: number; s?: number }) {
+  return (
+    <g transform={`translate(${x} ${y}) scale(${s})`}>
+      <ellipse cx="-17" cy="7" rx="4.5" ry="2.8" fill="var(--color-pink)" opacity=".9" />
+      <ellipse cx="17" cy="7" rx="4.5" ry="2.8" fill="var(--color-pink)" opacity=".9" />
+      <g className="blink" style={{ animationDelay: `${-((x * 7 + y * 3) % 50) / 10}s` }}>
+        <circle cx="-9" cy="0" r="3.8" fill={INK} />
+        <circle cx="9" cy="0" r="3.8" fill={INK} />
+        <circle cx="-7.8" cy="-1.3" r="1.2" fill="#fff" />
+        <circle cx="10.2" cy="-1.3" r="1.2" fill="#fff" />
+      </g>
+      <path d="M-6 6 Q0 14 6 6 Z" fill={INK} stroke={INK} strokeWidth="1.5" strokeLinejoin="round" />
+    </g>
+  );
+}
+
+export function ReceiptBuddy({ className, style }: StickerProps) {
+  const body = "M26 10 H94 A6 6 0 0 1 100 16 V112 l-8 -6 -8 6 -8 -6 -8 6 -8 -6 -8 6 -8 -6 -8 6 -8 -6 -8 6 V16 A6 6 0 0 1 26 10 Z";
+  return (
+    <svg viewBox="0 0 112 126" className={cn("w-28", className)} style={style} aria-hidden>
+      <Shape d={body} fill="var(--color-blue)" />
+      <path d="M36 74 H84 M36 86 H70 M36 98 H78" stroke={INK} strokeWidth="3" strokeLinecap="round" opacity=".8" />
+      <Face x={60} y={44} />
     </svg>
   );
 }
 
 export function TrialBuddy({ className, style }: StickerProps) {
+  const body = "M32 24 H96 A18 18 0 0 1 114 42 V98 A18 18 0 0 1 96 116 H32 A18 18 0 0 1 14 98 V42 A18 18 0 0 1 32 24 Z";
   return (
-    <svg viewBox="0 0 130 140" className={cn("w-28", className)} style={style} aria-hidden>
-      <Legs x={65} y={110} color="var(--color-coral)" />
-      <rect x="14" y="22" width="102" height="92" rx="24" fill="var(--color-grape)" />
-      <rect x="14" y="22" width="102" height="26" rx="13" fill="#6d3fe0" />
-      <rect x="38" y="10" width="9" height="24" rx="4.5" fill={INK} />
-      <rect x="83" y="10" width="9" height="24" rx="4.5" fill={INK} />
-      <Face x={65} y={78} mood="calm" />
-      <circle cx="40" cy="92" r="6" fill="#fff" opacity=".25" />
-      <circle cx="90" cy="92" r="6" fill="#fff" opacity=".25" />
+    <svg viewBox="0 0 126 126" className={cn("w-28", className)} style={style} aria-hidden>
+      <Shape d={body} fill="var(--color-grape)" />
+      <path d="M32 24 H96 A18 18 0 0 1 114 42 V50 H14 V42 A18 18 0 0 1 32 24 Z" fill={INK} />
+      <rect x="36" y="10" width="11" height="24" rx="5.5" fill="#fff" stroke={INK} strokeWidth={SW} />
+      <rect x="81" y="10" width="11" height="24" rx="5.5" fill="#fff" stroke={INK} strokeWidth={SW} />
+      <Face x={64} y={80} />
     </svg>
   );
 }
 
 export function CreditBuddy({ className, style }: StickerProps) {
+  const body = "M16 22 A8 8 0 0 1 24 14 H126 A8 8 0 0 1 134 22 V40 A12 12 0 0 0 134 64 V82 A8 8 0 0 1 126 90 H24 A8 8 0 0 1 16 82 V64 A12 12 0 0 0 16 40 Z";
   return (
-    <svg viewBox="0 0 150 120" className={cn("w-32", className)} style={style} aria-hidden>
-      <Legs x={75} y={92} color="var(--color-blue)" gap={30} />
-      <path d="M12 26 q0-10 10-10 h106 q10 0 10 10 v16 a12 12 0 0 0 0 24 v16 q0 10 -10 10 h-106 q-10 0 -10 -10 v-16 a12 12 0 0 0 0 -24z" fill="var(--color-coral)" />
-      <path d="M100 22 v68" stroke="#fff" strokeWidth="3" strokeDasharray="6 6" opacity=".6" />
-      <path d="M112 44 l12 10 -12 10" stroke="#fff" strokeWidth="5" fill="none" strokeLinecap="round" strokeLinejoin="round" opacity=".85" />
-      <Face x={56} y={54} mood="wow" />
+    <svg viewBox="0 0 146 102" className={cn("w-32", className)} style={style} aria-hidden>
+      <Shape d={body} fill="var(--color-coral)" />
+      <path d="M104 20 V84" stroke={INK} strokeWidth="3" strokeDasharray="5 6" strokeLinecap="round" />
+      <path d="M113 42 l10 10 -10 10" stroke={INK} strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      <Face x={60} y={50} />
     </svg>
   );
 }
 
 export function ShieldBuddy({ className, style }: StickerProps) {
+  const body = "M60 8 L102 22 V56 Q102 98 60 118 Q18 98 18 56 V22 Z";
   return (
-    <svg viewBox="0 0 120 140" className={cn("w-28", className)} style={style} aria-hidden>
-      <Legs x={60} y={112} color="var(--color-grape)" />
-      <path d="M60 8 l44 14 v34 q0 44 -44 64 q-44 -20 -44 -64 v-34z" fill="var(--color-leaf)" />
-      <path d="M60 20 l32 10 v26 q0 34 -32 50z" fill="#fff" opacity=".18" />
-      <Face x={60} y={58} />
-      <path d="M16 60 q-12 -2 -14 -16" stroke={INK} strokeWidth="4.5" fill="none" strokeLinecap="round" />
-      <path d="M104 60 q12 0 14 14" stroke={INK} strokeWidth="4.5" fill="none" strokeLinecap="round" />
+    <svg viewBox="0 0 112 126" className={cn("w-28", className)} style={style} aria-hidden>
+      <Shape d={body} fill="var(--color-leaf)" />
+      <path d="M60 20 L90 30 V56 Q90 88 60 104" stroke="#fff" strokeWidth="4" fill="none" strokeLinecap="round" opacity=".7" />
+      <Face x={58} y={58} />
     </svg>
   );
 }
 
 export function Coin({ className, style }: StickerProps) {
   return (
-    <svg viewBox="0 0 60 60" className={cn("w-12", className)} style={style} aria-hidden>
-      <circle cx="30" cy="30" r="27" fill="#f5a700" />
-      <circle cx="30" cy="28" r="25" fill="var(--color-sun)" />
-      <path d="M14 38 L38 10 M22 44 L44 18" stroke="#fff" strokeWidth="6" strokeLinecap="round" opacity=".55" />
+    <svg viewBox="0 0 64 64" className={cn("w-12", className)} style={style} aria-hidden>
+      <circle cx="31" cy="31" r="24" fill={INK} transform="translate(4 4)" />
+      <circle cx="31" cy="31" r="24" fill="var(--color-sun)" stroke={INK} strokeWidth={SW} />
+      <circle cx="31" cy="31" r="16" fill="none" stroke={INK} strokeWidth="2" strokeDasharray="3 4" />
+      <text x="31" y="39" textAnchor="middle" fontSize="22" fontWeight="800" fill={INK} fontFamily="var(--font-display)">$</text>
     </svg>
   );
 }
 
 export function Star({ className, style, color = "var(--color-sun)" }: StickerProps & { color?: string }) {
+  const d = "M22 4 l5.5 11.5 12.5 1.7 -9 8.8 2.2 12.5 -11.2 -6 -11.2 6 2.2 -12.5 -9 -8.8 12.5 -1.7 z";
   return (
-    <svg viewBox="0 0 40 40" className={cn("w-8", className)} style={style} aria-hidden>
-      <path d="M20 3 l5 11 12 1.5 -9 8 2.5 12 -10.5 -6 -10.5 6 2.5 -12 -9 -8 12 -1.5z" fill={color} strokeLinejoin="round" />
+    <svg viewBox="0 0 48 48" className={cn("w-8", className)} style={style} aria-hidden>
+      <path d={d} fill={INK} transform="translate(3 3)" />
+      <path d={d} fill={color} stroke={INK} strokeWidth="3" strokeLinejoin="round" />
     </svg>
   );
 }
 
 export function Heart({ className, style }: StickerProps) {
+  const d = "M24 42 C8 30 3 22 3 14 A10.5 10.5 0 0 1 24 9.5 A10.5 10.5 0 0 1 45 14 C45 22 40 30 24 42z";
   return (
-    <svg viewBox="0 0 48 44" className={cn("w-10", className)} style={style} aria-hidden>
-      <path d="M24 42 C8 30 2 22 2 14 A11 11 0 0 1 24 9 A11 11 0 0 1 46 14 C46 22 40 30 24 42z" fill="var(--color-coral)" />
-      <circle cx="34" cy="14" r="3.5" fill="#fff" opacity=".6" />
+    <svg viewBox="0 0 52 50" className={cn("w-10", className)} style={style} aria-hidden>
+      <path d={d} fill={INK} transform="translate(3 3)" />
+      <path d={d} fill="var(--color-pink)" stroke={INK} strokeWidth="3" strokeLinejoin="round" />
     </svg>
   );
 }
 
 export function CheckBubble({ className, style }: StickerProps) {
   return (
-    <svg viewBox="0 0 56 56" className={cn("w-12", className)} style={style} aria-hidden>
-      <circle cx="28" cy="28" r="26" fill="#efeee9" />
-      <path d="M16 29 l8 8 16 -18" stroke="var(--color-leaf)" strokeWidth="7" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+    <svg viewBox="0 0 62 62" className={cn("w-12", className)} style={style} aria-hidden>
+      <circle cx="28" cy="28" r="24" fill={INK} transform="translate(4 4)" />
+      <circle cx="28" cy="28" r="24" fill="#fff" stroke={INK} strokeWidth={SW} />
+      <path d="M17 29 l7.5 7.5 15 -16" stroke={INK} strokeWidth="5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }
 
 export function Sparkle({ className, style, color = "var(--color-blue)" }: StickerProps & { color?: string }) {
+  const d = "M16 2 q2 12 14 14 q-12 2 -14 14 q-2 -12 -14 -14 q12 -2 14 -14z";
   return (
-    <svg viewBox="0 0 30 30" className={cn("w-6", className)} style={style} aria-hidden>
-      <path d="M15 1 q2 12 14 14 q-12 2 -14 14 q-2 -12 -14 -14 q12 -2 14 -14z" fill={color} />
+    <svg viewBox="0 0 34 34" className={cn("w-6", className)} style={style} aria-hidden>
+      <path d={d} fill={color} stroke={INK} strokeWidth="2.5" strokeLinejoin="round" />
     </svg>
   );
 }
 
 export function Dot({ className, color }: { className?: string; color: string }) {
-  return <span aria-hidden className={cn("block rounded-full", className)} style={{ background: color }} />;
+  return <span aria-hidden className={cn("block rounded-full border-2 border-ink", className)} style={{ background: color }} />;
 }
 
 /** Kind → sticker + colors, shared by the landing page and the app. */
 export const KIND_STYLE = {
-  purchase: { label: "Returns", bg: "bg-blue", soft: "bg-blue-soft", text: "text-blue", Sticker: ReceiptBuddy },
-  subscription: { label: "Trials & renewals", bg: "bg-grape", soft: "bg-grape-soft", text: "text-grape", Sticker: TrialBuddy },
-  travel_credit: { label: "Travel credits", bg: "bg-coral", soft: "bg-coral-soft", text: "text-coral", Sticker: CreditBuddy },
-  warranty: { label: "Warranties", bg: "bg-leaf", soft: "bg-leaf-soft", text: "text-leaf", Sticker: ShieldBuddy },
+  purchase: { label: "Returns", bg: "bg-blue", soft: "bg-blue-soft", text: "text-blue-ink", Sticker: ReceiptBuddy },
+  subscription: { label: "Trials & renewals", bg: "bg-grape", soft: "bg-grape-soft", text: "text-grape-ink", Sticker: TrialBuddy },
+  travel_credit: { label: "Travel credits", bg: "bg-coral", soft: "bg-coral-soft", text: "text-coral-ink", Sticker: CreditBuddy },
+  warranty: { label: "Warranties", bg: "bg-leaf", soft: "bg-leaf-soft", text: "text-leaf-ink", Sticker: ShieldBuddy },
 } as const;

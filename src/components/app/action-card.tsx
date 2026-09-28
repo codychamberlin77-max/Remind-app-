@@ -22,11 +22,11 @@ const ICONS: Record<string, typeof Check> = {
 
 /** Sticker palette per action type (matches the landing page tiles). */
 const TONES: Record<string, string> = {
-  return: "bg-blue text-white",
-  cancel_trial: "bg-grape text-white",
-  review_renewal: "bg-grape text-white",
-  use_credit: "bg-coral text-white",
-  warranty_expiring: "bg-leaf text-white",
+  return: "bg-blue text-ink",
+  cancel_trial: "bg-grape text-ink",
+  review_renewal: "bg-grape text-ink",
+  use_credit: "bg-coral text-ink",
+  warranty_expiring: "bg-leaf text-ink",
   pay_bill: "bg-sun text-ink",
 };
 

@@ -7,30 +7,35 @@
   --font-display: "Inter Tight Variable", "Inter Variable", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
 
-  /* Warm neutrals: white pages, off-white tiles, no heavy shadows. */
-  --color-canvas: #ffffff;
+  /* LIFEOS palette: warm cream paper, ink-black outlines, and pastel-bright "highlighter" accents.
+     Token names are historical; values: blue = sky, grape = lilac, coral = tangerine, leaf = lime. */
+  --color-canvas: #fbf8f2;
   --color-surface: #ffffff;
-  --color-tile: #f7f6f3;
-  --color-ink: #121212;
-  --color-ink-2: #2f2e2c;
-  --color-muted: #6f6c67;
-  --color-subtle: #a19d97;
-  --color-line: #edebe7;
-  --color-line-strong: #dedbd5;
-  --color-hover: #f0eee9;
+  --color-tile: #f3eee4;
+  --color-ink: #141414;
+  --color-ink-2: #2e2b27;
+  --color-muted: #6c665d;
+  --color-subtle: #a19a8f;
+  --color-line: #e8e1d4;
+  --color-line-strong: #d6ccba;
+  --color-hover: #ece5d8;
 
-  /* Sticker palette: saturated pops on a calm page. */
-  --color-blue: #0a9bff;
-  --color-blue-soft: #e3f3ff;
-  --color-grape: #8b5cf6;
-  --color-grape-soft: #efe9ff;
-  --color-coral: #ff4d1f;
-  --color-coral-soft: #ffece5;
-  --color-leaf: #12c26b;
-  --color-leaf-soft: #e2f8ec;
-  --color-sun: #ffc233;
-  --color-sun-soft: #fff5d9;
-  --color-pink: #ff5fa2;
+  --color-blue: #8fd3ff;
+  --color-blue-soft: #e4f4ff;
+  --color-blue-ink: #0b6aa8;
+  --color-grape: #c3b1ff;
+  --color-grape-soft: #efeaff;
+  --color-grape-ink: #5b40c9;
+  --color-coral: #ff8a4c;
+  --color-coral-soft: #ffeadd;
+  --color-coral-ink: #c24a12;
+  --color-leaf: #c6f36a;
+  --color-leaf-soft: #f0fcd6;
+  --color-leaf-ink: #3b7400;
+  --color-sun: #ffd45c;
+  --color-sun-soft: #fff5d6;
+  --color-sun-ink: #8f6400;
+  --color-pink: #ff9ec7;
 
   --color-confirmed: #0e7a52;
   --color-confirmed-bg: #e8f5ee;
@@ -84,8 +89,8 @@
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
   }
-  ::selection { background: #0a9bff33; }
-  :focus-visible { outline: 2px solid #0a9bff; outline-offset: 2px; border-radius: 8px; }
+  ::selection { background: #c6f36a; color: #141414; }
+  :focus-visible { outline: 2px solid #141414; outline-offset: 2px; border-radius: 8px; }
   h1, h2, h3, .font-display { font-family: var(--font-display); }
   .tabular { font-variant-numeric: tabular-nums; }
 }
@@ -105,6 +110,9 @@
     .spring-hover { transition: scale 420ms cubic-bezier(0.34, 1.8, 0.64, 1), rotate 420ms cubic-bezier(0.34, 1.8, 0.64, 1); }
     .spring-hover:hover { scale: 1.1; rotate: -6deg; }
   }
+  /* Signature look: ink outline + hard offset shadow (a printed-sticker feel). */
+  .brut { border: 2px solid var(--color-ink); box-shadow: 4px 4px 0 var(--color-ink); }
+  .brut-sm { border: 2px solid var(--color-ink); box-shadow: 3px 3px 0 var(--color-ink); }
   /* Tactile press on anything clickable. */
   .press { transition: transform 160ms cubic-bezier(0.34, 1.56, 0.64, 1); }
   .press:active { transform: scale(0.96); }
